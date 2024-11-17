@@ -211,7 +211,7 @@ const ProductDialog = React.memo(({ record }: { record: ProductRecord }) => {
       date: record.last_modified_date,
     };
     Array.from({ length: 10 }, (_, i) => `ship${i + 1}`).forEach((shipName) => {
-      dataPoint[shipName] = record.ships[shipName].price_list[0];
+      dataPoint[shipName] = record.ships[shipName].price_list[0] || 0;
     });
     return dataPoint;
   });
@@ -580,6 +580,44 @@ export function ProductPriceRecord() {
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
+  const handleCSVDownload = () => {
+    const headers = [
+      "最終更新日",
+      "商品名",
+      "最高価格",
+      "最低価格",
+      "平均価格",
+      ...Array.from({ length: 10 }, (_, i) => `ship${i + 1}`),
+    ];
+    const csvContent = [
+      headers.join(","),
+      ...sortedRecords.map((record) =>
+        [
+          record.last_modified_date,
+          record.product_name,
+          record.max,
+          record.min,
+          record.average,
+          ...Array.from({ length: 10 }, (_, i) => record[`ship${i + 1}`]),
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "product_records.csv");
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   return (
     <div className="w-full p-4">
       <h1 className="text-2xl font-bold mb-4">PSO2NGS 商品価格一覧</h1>
@@ -602,12 +640,36 @@ export function ProductPriceRecord() {
       {error && <div className="text-red-500 mb-4">{error}</div>}
       {sortedRecords.length > 0 ? (
         <Tabs defaultValue="table" className="w-full">
-          <TabsList>
-            <TabsTrigger value="table">レコード一覧</TabsTrigger>
-            <TabsTrigger value="summary">サマリ</TabsTrigger>
-          </TabsList>
+          <div className="mb-4 flex gap-2">
+            <TabsList>
+              <TabsTrigger value="table">レコード一覧</TabsTrigger>
+              <TabsTrigger value="summary">サマリ</TabsTrigger>
+            </TabsList>
+            <Button
+              onClick={handleCSVDownload}
+              disabled={sortedRecords.length === 0}
+            >
+              CSVダウンロード
+            </Button>
+          </div>
           <TabsContent value="table">
             <div className="overflow-x-auto w-full">
+              <div className="mt-4 flex justify-center">
+                {Array.from(
+                  { length: Math.ceil(sortedRecords.length / recordsPerPage) },
+                  (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => paginate(i + 1)}
+                      className={`mx-1 px-3 py-1 border rounded ${
+                        currentPage === i + 1 ? "bg-blue-500 text-white" : ""
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  )
+                )}
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
