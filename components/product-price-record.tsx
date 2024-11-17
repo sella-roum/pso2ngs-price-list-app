@@ -43,23 +43,26 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseApiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 type ProductRecord = {
-  [key: string]: number | string;
+  [key: string]:
+    | number
+    | string
+    | {
+        [shipName: string]: {
+          price_list: number[];
+          last_modified: string;
+        };
+      };
   last_modified_date: string;
   product_name: string;
   max: number;
   min: number;
   average: number;
-  ship1: number;
-  ship2: number;
-  ship3: number;
-  ship4: number;
-  ship5: number;
-  ship6: number;
-  ship7: number;
-  ship8: number;
-  ship9: number;
-  ship10: number;
-  ships: Record<string, { last_modified: string; price_list: number[] }>;
+  ships: {
+    [shipName: string]: {
+      price_list: number[];
+      last_modified: string;
+    };
+  };
 };
 
 const ShipPopover = React.memo(
@@ -85,8 +88,6 @@ const ShipPopover = React.memo(
         amount
       );
     };
-
-    // const currentShip = ships[shipKey] || { last_modified: "", price_list: [] };
 
     if (!shipPriceList || shipPriceList.length === 0) {
       return <span>データなし</span>;
@@ -210,7 +211,7 @@ const ProductDialog = React.memo(({ record }: { record: ProductRecord }) => {
       date: record.last_modified_date,
     };
     Array.from({ length: 10 }, (_, i) => `ship${i + 1}`).forEach((shipName) => {
-      dataPoint[shipName] = record[shipName] as number;
+      dataPoint[shipName] = record.ships[shipName].price_list[0];
     });
     return dataPoint;
   });
@@ -344,7 +345,7 @@ const ProductDialog = React.memo(({ record }: { record: ProductRecord }) => {
                                             {formatDate(
                                               data["ships"][`${shipName}`][
                                                 "last_modified"
-                                              ] as string
+                                              ]
                                             )}
                                           </p>
                                         </div>
@@ -354,11 +355,9 @@ const ProductDialog = React.memo(({ record }: { record: ProductRecord }) => {
                                               価格
                                             </span>
                                           </div>
-                                          {(
-                                            data["ships"][`${shipName}`][
-                                              "price_list"
-                                            ] as number[]
-                                          )?.map(
+                                          {data["ships"][`${shipName}`][
+                                            "price_list"
+                                          ]?.map(
                                             (
                                               price: number,
                                               priceIndex: number
@@ -403,8 +402,12 @@ const SummaryTab = ({ records }: { records: ProductRecord[] }) => {
   const totalProducts = records.length;
   const shipStats = Array.from({ length: 10 }, (_, i) => {
     const shipKey = `ship${i + 1}`;
-    const maxCount = records.filter((r) => r[shipKey] === r.max).length;
-    const minCount = records.filter((r) => r[shipKey] === r.min).length;
+    const maxCount = records.filter(
+      (r) => r.ships[shipKey].price_list[0] === r.max
+    ).length;
+    const minCount = records.filter(
+      (r) => r.ships[shipKey].price_list[0] === r.min
+    ).length;
     return { name: shipKey, max: maxCount, min: minCount };
   });
 
@@ -654,7 +657,7 @@ export function ProductPriceRecord() {
                       <TableCell>{formatCurrency(record.average)}</TableCell>
                       {Array.from({ length: 10 }, (_, i) => {
                         const shipKey = `ship${i + 1}`;
-                        const shipValue = record[shipKey] as number;
+                        const shipValue = record.ships[shipKey].price_list[0];
                         const isMax = shipValue === record.max;
                         const isMin = shipValue === record.min;
                         const cellClass = isMax
