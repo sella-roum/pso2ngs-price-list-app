@@ -582,7 +582,7 @@ export function ProductPriceRecord() {
 
   return (
     <div className="w-full p-4">
-      <h1 className="text-2xl font-bold mb-4">商品価格レコード一覧</h1>
+      <h1 className="text-2xl font-bold mb-4">PSO2NGS 商品価格一覧</h1>
       <div className="mb-4 space-y-4">
         <Button onClick={() => fetchData("", true)} disabled={loading}>
           {loading ? "データを取得中..." : "最終更新日のデータを取得"}
