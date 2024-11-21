@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -37,8 +37,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Bar, BarChart as BarChartRecharts } from "recharts";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowUp, ArrowDown } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseApiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -105,7 +106,10 @@ const ShipPopover = React.memo(
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <button className="underline text-blue-600 hover:text-blue-800">
+          <button
+            className="underline text-blue-600 hover:text-blue-800"
+            aria-label={`${shipKey}の価格詳細を表示`}
+          >
             {formatCurrency(currentShip.price_list[0])}
           </button>
         </PopoverTrigger>
@@ -252,7 +256,10 @@ const ProductDialog = React.memo(
         }}
       >
         <DialogTrigger asChild>
-          <button className="underline text-blue-600 hover:text-blue-800">
+          <button
+            className="underline text-blue-600 hover:text-blue-800"
+            aria-label={`${record.product_name}の価格遷移を表示`}
+          >
             {record.product_name}
           </button>
         </DialogTrigger>
@@ -261,9 +268,11 @@ const ProductDialog = React.memo(
             <DialogTitle>{record.product_name}の価格遷移</DialogTitle>
           </DialogHeader>
           {loading ? (
-            <div className="flex items-center justify-center">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              データを読み込んでいます...
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              <p className="text-sm text-gray-500">
+                データを読み込んでいます...
+              </p>
             </div>
           ) : error ? (
             <Alert variant="destructive">
@@ -271,7 +280,14 @@ const ProductDialog = React.memo(
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : timeSeriesData.length === 0 ? (
-            <div>データがありません</div>
+            <div className="text-center py-4">
+              <p className="text-lg font-semibold text-gray-700">
+                データがありません
+              </p>
+              <p className="text-sm text-gray-500">
+                この商品の価格履歴は現在ありません。
+              </p>
+            </div>
           ) : (
             <Tabs defaultValue="graph" className="w-full">
               <TabsList>
@@ -521,6 +537,21 @@ export function ProductPriceRecord() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  useEffect(() => {
+    const savedSettings = localStorage.getItem("userSettings");
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setItemsPerPage(settings.itemsPerPage || 10);
+      setSortColumn(settings.sortColumn || "last_modified_date");
+      setSortDirection(settings.sortDirection || "desc");
+    }
+  }, []);
+
+  useEffect(() => {
+    const settings = { itemsPerPage, sortColumn, sortDirection };
+    localStorage.setItem("userSettings", JSON.stringify(settings));
+  }, [itemsPerPage, sortColumn, sortDirection]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("ja-JP", { style: "decimal" }).format(amount);
   };
@@ -583,24 +614,30 @@ export function ProductPriceRecord() {
       };
     }
 
-    try {
-      const response = await fetch(endpoint, options);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    const fetchWithRetry = async (retries = 3) => {
+      try {
+        const response = await fetch(endpoint, options);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setRecords(Array.isArray(data) ? data : []);
+        setCurrentPage(1);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        if (retries > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          return fetchWithRetry(retries - 1);
+        }
+        setError(
+          "データの取得中にエラーが発生しました。ネットワーク接続を確認し、再度お試しください。エラーが続く場合は、管理者にお問い合わせください。"
+        );
+        setRecords([]);
       }
-      const data = await response.json();
-      setRecords(Array.isArray(data) ? data : []);
-      setCurrentPage(1);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setError(
-        "データの取得中にエラーが発生しました。詳細: " +
-          (error instanceof Error ? error.message : String(error))
-      );
-      setRecords([]);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    await fetchWithRetry();
+    setLoading(false);
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -730,9 +767,11 @@ export function ProductPriceRecord() {
         </Alert>
       )}
       {loading ? (
-        <div className="flex items-center justify-center">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          データを取得中...
+        <div className="flex flex-col items-center justify-center space-y-2">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          <p className="text-sm text-gray-500">
+            データを取得中です。しばらくお待ちください...
+          </p>
         </div>
       ) : sortedRecords.length > 0 ? (
         <Tabs defaultValue="table" className="w-full">
@@ -756,27 +795,47 @@ export function ProductPriceRecord() {
                     <TableHead onClick={() => handleSort("last_modified_date")}>
                       最終更新日{" "}
                       {sortColumn === "last_modified_date" &&
-                        (sortDirection === "asc" ? "▲" : "▼")}
+                        (sortDirection === "asc" ? (
+                          <ArrowUp className="inline-block w-4 h-4" />
+                        ) : (
+                          <ArrowDown className="inline-block w-4 h-4" />
+                        ))}
                     </TableHead>
                     <TableHead onClick={() => handleSort("product_name")}>
                       商品名{" "}
                       {sortColumn === "product_name" &&
-                        (sortDirection === "asc" ? "▲" : "▼")}
+                        (sortDirection === "asc" ? (
+                          <ArrowUp className="inline-block w-4 h-4" />
+                        ) : (
+                          <ArrowDown className="inline-block w-4 h-4" />
+                        ))}
                     </TableHead>
                     <TableHead onClick={() => handleSort("max")}>
                       最高価格{" "}
                       {sortColumn === "max" &&
-                        (sortDirection === "asc" ? "▲" : "▼")}
+                        (sortDirection === "asc" ? (
+                          <ArrowUp className="inline-block w-4 h-4" />
+                        ) : (
+                          <ArrowDown className="inline-block w-4 h-4" />
+                        ))}
                     </TableHead>
                     <TableHead onClick={() => handleSort("min")}>
                       最低価格{" "}
                       {sortColumn === "min" &&
-                        (sortDirection === "asc" ? "▲" : "▼")}
+                        (sortDirection === "asc" ? (
+                          <ArrowUp className="inline-block w-4 h-4" />
+                        ) : (
+                          <ArrowDown className="inline-block w-4 h-4" />
+                        ))}
                     </TableHead>
                     <TableHead onClick={() => handleSort("average")}>
                       平均価格{" "}
                       {sortColumn === "average" &&
-                        (sortDirection === "asc" ? "▲" : "▼")}
+                        (sortDirection === "asc" ? (
+                          <ArrowUp className="inline-block w-4 h-4" />
+                        ) : (
+                          <ArrowDown className="inline-block w-4 h-4" />
+                        ))}
                     </TableHead>
                     {Array.from({ length: 10 }, (_, i) => (
                       <TableHead key={i}>ship{i + 1}</TableHead>
@@ -820,7 +879,7 @@ export function ProductPriceRecord() {
                 </TableBody>
               </Table>
             </div>
-            <div className="mt-4 flex justify-between items-center">
+            <div className="mt-4 flex flex-col items-center gap-4">
               <div>
                 <span className="mr-2">1ページあたりの表示件数:</span>
                 <select
@@ -833,27 +892,71 @@ export function ProductPriceRecord() {
                   <option value="50">50</option>
                 </select>
               </div>
-              <div>
+              <div className="flex items-center gap-1">
                 <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
                   disabled={currentPage === 1}
-                  className="mr-2"
                 >
-                  前へ
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span>
-                  {currentPage} / {totalPages}
-                </span>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(
+                    (pageNum) =>
+                      pageNum === 1 ||
+                      pageNum === totalPages ||
+                      (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
+                  )
+                  .map((pageNum, i, array) => {
+                    if (i > 0 && array[i - 1] !== pageNum - 1) {
+                      return (
+                        <React.Fragment key={`ellipsis-${pageNum}`}>
+                          <span className="px-2">...</span>
+                          <Button
+                            variant={
+                              currentPage === pageNum ? "default" : "outline"
+                            }
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={
+                              currentPage === pageNum
+                                ? "bg-blue-500 text-white"
+                                : ""
+                            }
+                          >
+                            {pageNum}
+                          </Button>
+                        </React.Fragment>
+                      );
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={
+                          currentPage === pageNum ? "default" : "outline"
+                        }
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={
+                          currentPage === pageNum
+                            ? "bg-blue-500 text-white"
+                            : ""
+                        }
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
                 <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() =>
                     setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                   }
                   disabled={currentPage === totalPages}
-                  className="ml-2"
                 >
-                  次へ
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -863,7 +966,14 @@ export function ProductPriceRecord() {
           </TabsContent>
         </Tabs>
       ) : (
-        <div>データがありません</div>
+        <div className="text-center py-8">
+          <p className="text-xl font-semibold text-gray-700">
+            データがありません
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            検索条件を変更するか、新しいデータを追加してください。
+          </p>
+        </div>
       )}
     </div>
   );
