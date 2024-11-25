@@ -1,20 +1,42 @@
-import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { ProductRecord } from "@/types/product"
-import { formatCurrency, getColorClass } from "@/utils/formatters"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2 } from 'lucide-react'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { ShipPopover } from "@/components/ShipPopover"
-import { fetchProductHistory } from "@/app/actions"
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ProductRecord } from "@/types/product";
+import { formatCurrency, getColorClass } from "@/utils/formatters";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { ShipPopover } from "@/components/ShipPopover";
+import { fetchProductHistory } from "@/app/actions";
 
 interface ProductDialogProps {
-  record: ProductRecord
+  record: ProductRecord;
 }
 
 export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
@@ -30,8 +52,6 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 
@@ -51,11 +71,9 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
     const dataPoint: { [key: string]: string | number } = {
       date: record.last_modified_date,
     };
-    Array.from({ length: 10 }, (_, i) => `ship${i + 1}`).forEach(
-      (shipName) => {
-        dataPoint[shipName] = record[shipName] as number;
-      }
-    );
+    Array.from({ length: 10 }, (_, i) => `ship${i + 1}`).forEach((shipName) => {
+      dataPoint[shipName] = record[shipName] as number;
+    });
     return dataPoint;
   });
 
@@ -91,9 +109,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
         {loading ? (
           <div className="flex flex-col items-center justify-center space-y-2">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            <p className="text-sm text-gray-500">
-              データを読み込んでいます...
-            </p>
+            <p className="text-sm text-gray-500">データを読み込んでいます...</p>
           </div>
         ) : error ? (
           <Alert variant="destructive">
@@ -141,7 +157,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                     <YAxis
                       tickFormatter={(value) => formatCurrency(value)}
                       width={80}
-                      style={{ fontSize: '0.8rem' }}
+                      style={{ fontSize: "0.8rem" }}
                     />
                     <Tooltip
                       formatter={(value) => formatCurrency(value as number)}
@@ -194,13 +210,8 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                           <TableCell className="bg-blue-100 font-bold">
                             {formatCurrency(data.min)}
                           </TableCell>
-                          <TableCell>
-                            {formatCurrency(data.average)}
-                          </TableCell>
-                          {Array.from(
-                            { length: 10 },
-                            (_, i) => `ship${i + 1}`
-                          )
+                          <TableCell>{formatCurrency(data.average)}</TableCell>
+                          {Array.from({ length: 10 }, (_, i) => `ship${i + 1}`)
                             .filter((shipName) =>
                               selectedShips.includes(shipName)
                             )
@@ -216,7 +227,10 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                                   key={shipName}
                                   className={colorClass}
                                 >
-                                  <ShipPopover record={data} shipKey={shipName} />
+                                  <ShipPopover
+                                    record={data}
+                                    shipKey={shipName}
+                                  />
                                 </TableCell>
                               );
                             })}
@@ -231,6 +245,5 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
         )}
       </DialogContent>
     </Dialog>
-  )
-}
-
+  );
+};
