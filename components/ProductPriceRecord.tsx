@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -319,9 +320,11 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
                       <TableCell>
                         {record.img && (
                           <div className="w-32 h-32 relative overflow-hidden">
-                            <img
+                            <Image
                               src={record.img}
                               alt={record.product_name}
+                              width={128} // 適切な幅を指定してください
+                              height={128} // 適切な高さを指定してください
                               className="absolute inset-0 w-full h-full object-cover"
                             />
                           </div>
