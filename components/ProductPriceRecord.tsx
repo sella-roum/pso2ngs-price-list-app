@@ -27,6 +27,7 @@ import { ShipPopover } from "@/components/ShipPopover";
 import { ProductDialog } from "@/components/ProductDialog";
 import { SummaryTab } from "@/components/SummaryTab";
 import { fetchLatestProducts, fetchMaxLastModifiedRecord } from "@/app/actions";
+import { ProductCard } from "@/components/ProductCard";
 
 const MemoizedShipPopover = React.memo(ShipPopover);
 const MemoizedProductDialog = React.memo(ProductDialog);
@@ -49,6 +50,7 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
   const [searchGroupName, setSearchGroupName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [jumpToPage, setJumpToPage] = useState("");
 
   useEffect(() => {
     const savedSettings = localStorage.getItem("userSettings");
@@ -241,131 +243,159 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
           </div>
           <TabsContent value="table">
             <div className="overflow-x-auto w-full">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead onClick={() => handleSort("category")}>
-                      カテゴリ{" "}
-                      {sortColumn === "category" &&
-                        (sortDirection === "asc" ? (
-                          <ArrowUp className="inline-block w-4 h-4" />
-                        ) : (
-                          <ArrowDown className="inline-block w-4 h-4" />
-                        ))}
-                    </TableHead>
-                    <TableHead>画像</TableHead>
-                    <TableHead onClick={() => handleSort("last_modified_date")}>
-                      最終更新日{" "}
-                      {sortColumn === "last_modified_date" &&
-                        (sortDirection === "asc" ? (
-                          <ArrowUp className="inline-block w-4 h-4" />
-                        ) : (
-                          <ArrowDown className="inline-block w-4 h-4" />
-                        ))}
-                    </TableHead>
-                    <TableHead onClick={() => handleSort("product_name")}>
-                      商品名{" "}
-                      {sortColumn === "product_name" &&
-                        (sortDirection === "asc" ? (
-                          <ArrowUp className="inline-block w-4 h-4" />
-                        ) : (
-                          <ArrowDown className="inline-block w-4 h-4" />
-                        ))}
-                    </TableHead>
-                    <TableHead onClick={() => handleSort("max")}>
-                      最高価格{" "}
-                      {sortColumn === "max" &&
-                        (sortDirection === "asc" ? (
-                          <ArrowUp className="inline-block w-4 h-4" />
-                        ) : (
-                          <ArrowDown className="inline-block w-4 h-4" />
-                        ))}
-                    </TableHead>
-                    <TableHead onClick={() => handleSort("min")}>
-                      最低価格{" "}
-                      {sortColumn === "min" &&
-                        (sortDirection === "asc" ? (
-                          <ArrowUp className="inline-block w-4 h-4" />
-                        ) : (
-                          <ArrowDown className="inline-block w-4 h-4" />
-                        ))}
-                    </TableHead>
-                    <TableHead onClick={() => handleSort("average")}>
-                      平均価格{" "}
-                      {sortColumn === "average" &&
-                        (sortDirection === "asc" ? (
-                          <ArrowUp className="inline-block w-4 h-4" />
-                        ) : (
-                          <ArrowDown className="inline-block w-4 h-4" />
-                        ))}
-                    </TableHead>
-                    {Array.from({ length: 10 }, (_, i) => (
-                      <TableHead key={i}>ship{i + 1}</TableHead>
-                    ))}
-                    <TableHead onClick={() => handleSort("group_name")}>
-                      グループ名{" "}
-                      {sortColumn === "group_name" &&
-                        (sortDirection === "asc" ? (
-                          <ArrowUp className="inline-block w-4 h-4" />
-                        ) : (
-                          <ArrowDown className="inline-block w-4 h-4" />
-                        ))}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedRecords.map((record, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{record.category}</TableCell>
-                      <TableCell>
-                        {record.img && (
-                          <div className="w-32 h-32 relative overflow-hidden">
-                            <Image
-                              src={record.img}
-                              alt={record.product_name}
-                              width={128} // 適切な幅を指定してください
-                              height={128} // 適切な高さを指定してください
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{record.last_modified_date}</TableCell>
-                      <TableCell>
-                        <MemoizedProductDialog record={record} />
-                      </TableCell>
-                      <TableCell className="bg-red-100 font-bold">
-                        {formatCurrency(record.max)}
-                      </TableCell>
-                      <TableCell className="bg-blue-100 font-bold">
-                        {formatCurrency(record.min)}
-                      </TableCell>
-                      <TableCell>{formatCurrency(record.average)}</TableCell>
-                      {Array.from({ length: 10 }, (_, i) => {
-                        const shipKey = `ship${i + 1}`;
-                        const shipValue = record[shipKey] as number;
-                        const colorClass = getColorClass(
-                          shipValue,
-                          record.max,
-                          record.min
-                        );
-                        return (
-                          <TableCell key={i} className={colorClass}>
-                            <MemoizedShipPopover
-                              record={record}
-                              shipKey={shipKey}
-                            />
-                          </TableCell>
-                        );
-                      })}
-                      <TableCell>{record.group_name}</TableCell>
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead onClick={() => handleSort("category")}>
+                        カテゴリ{" "}
+                        {sortColumn === "category" &&
+                          (sortDirection === "asc" ? (
+                            <ArrowUp className="inline-block w-4 h-4" />
+                          ) : (
+                            <ArrowDown className="inline-block w-4 h-4" />
+                          ))}
+                      </TableHead>
+                      <TableHead>画像</TableHead>
+                      <TableHead
+                        onClick={() => handleSort("last_modified_date")}
+                      >
+                        最終更新日{" "}
+                        {sortColumn === "last_modified_date" &&
+                          (sortDirection === "asc" ? (
+                            <ArrowUp className="inline-block w-4 h-4" />
+                          ) : (
+                            <ArrowDown className="inline-block w-4 h-4" />
+                          ))}
+                      </TableHead>
+                      <TableHead onClick={() => handleSort("product_name")}>
+                        商品名{" "}
+                        {sortColumn === "product_name" &&
+                          (sortDirection === "asc" ? (
+                            <ArrowUp className="inline-block w-4 h-4" />
+                          ) : (
+                            <ArrowDown className="inline-block w-4 h-4" />
+                          ))}
+                      </TableHead>
+                      <TableHead onClick={() => handleSort("max")}>
+                        最高価格{" "}
+                        {sortColumn === "max" &&
+                          (sortDirection === "asc" ? (
+                            <ArrowUp className="inline-block w-4 h-4" />
+                          ) : (
+                            <ArrowDown className="inline-block w-4 h-4" />
+                          ))}
+                      </TableHead>
+                      <TableHead onClick={() => handleSort("min")}>
+                        最低価格{" "}
+                        {sortColumn === "min" &&
+                          (sortDirection === "asc" ? (
+                            <ArrowUp className="inline-block w-4 h-4" />
+                          ) : (
+                            <ArrowDown className="inline-block w-4 h-4" />
+                          ))}
+                      </TableHead>
+                      <TableHead onClick={() => handleSort("average")}>
+                        平均価格{" "}
+                        {sortColumn === "average" &&
+                          (sortDirection === "asc" ? (
+                            <ArrowUp className="inline-block w-4 h-4" />
+                          ) : (
+                            <ArrowDown className="inline-block w-4 h-4" />
+                          ))}
+                      </TableHead>
+                      {Array.from({ length: 10 }, (_, i) => (
+                        <TableHead key={i}>ship{i + 1}</TableHead>
+                      ))}
+                      <TableHead onClick={() => handleSort("group_name")}>
+                        グループ名{" "}
+                        {sortColumn === "group_name" &&
+                          (sortDirection === "asc" ? (
+                            <ArrowUp className="inline-block w-4 h-4" />
+                          ) : (
+                            <ArrowDown className="inline-block w-4 h-4" />
+                          ))}
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedRecords.map((record, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{record.category}</TableCell>
+                        <TableCell>
+                          {record.img && (
+                            <div className="w-32 h-32 relative overflow-hidden">
+                              <Image
+                                src={record.img}
+                                alt={record.product_name}
+                                width={128}
+                                height={128}
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>{record.last_modified_date}</TableCell>
+                        <TableCell>
+                          <MemoizedProductDialog record={record} />
+                        </TableCell>
+                        <TableCell className="bg-red-100 font-bold">
+                          {formatCurrency(record.max)}
+                        </TableCell>
+                        <TableCell className="bg-blue-100 font-bold">
+                          {formatCurrency(record.min)}
+                        </TableCell>
+                        <TableCell>{formatCurrency(record.average)}</TableCell>
+                        {Array.from({ length: 10 }, (_, i) => {
+                          const shipKey = `ship${i + 1}`;
+                          const shipValue = record[shipKey] as number;
+                          const colorClass = getColorClass(
+                            shipValue,
+                            record.max,
+                            record.min
+                          );
+                          return (
+                            <TableCell key={i} className={colorClass}>
+                              <MemoizedShipPopover
+                                record={record}
+                                shipKey={shipKey}
+                              />
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell>{record.group_name}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="sm:hidden space-y-4">
+                {paginatedRecords.map((record, index) => (
+                  <ProductCard key={index} record={record} />
+                ))}
+              </div>
             </div>
             <div className="mt-4 flex flex-col items-center gap-4">
-              <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Input
+                  type="number"
+                  value={jumpToPage}
+                  onChange={(e) => setJumpToPage(e.target.value)}
+                  placeholder="ページ番号"
+                  className="w-24"
+                />
+                <Button
+                  onClick={() => {
+                    const page = parseInt(jumpToPage);
+                    if (page >= 1 && page <= totalPages) {
+                      setCurrentPage(page);
+                      setJumpToPage("");
+                    }
+                  }}
+                  disabled={!jumpToPage}
+                >
+                  ジャンプ
+                </Button>
                 <span className="mr-2">1ページあたりの表示件数:</span>
                 <select
                   value={itemsPerPage}

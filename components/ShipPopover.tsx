@@ -73,13 +73,13 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">最高価格との差:</span>
               <span className="text-sm">
-                {formatCurrency(record.max - currentShip.price_list[0])}
+                {record.max === currentShip.price_list[0] ? "0" : "+" + formatCurrency(record.max - currentShip.price_list[0])}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium">最低価格との差:</span>
               <span className="text-sm">
-                {formatCurrency(currentShip.price_list[0] - record.min)}
+                {record.min === currentShip.price_list[0] ? "0" : "-" + formatCurrency(currentShip.price_list[0] - record.min)}
               </span>
             </div>
           </div>
@@ -101,3 +101,4 @@ export const ShipPopover: React.FC<ShipPopoverProps> = ({
     </Popover>
   );
 };
+

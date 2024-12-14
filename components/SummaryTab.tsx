@@ -78,3 +78,4 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({ records }) => {
     </div>
   );
 };
+

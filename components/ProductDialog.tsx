@@ -102,7 +102,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
           {record.product_name}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[80vw] max-h-[80vh] w-full overflow-y-auto">
+      <DialogContent className="max-w-[100vw] max-h-[100vh] w-full h-full sm:max-w-[80vw] sm:max-h-[80vh] sm:h-auto overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{record.product_name}の価格遷移</DialogTitle>
         </DialogHeader>
