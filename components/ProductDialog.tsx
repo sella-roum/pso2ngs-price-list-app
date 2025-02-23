@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +46,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
   const [timeSeriesData, setTimeSeriesData] = useState<ProductRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoadedData, setHasLoadedData] = useState(false); // データをロードしたかどうかを追跡する新しいstate
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("ja-JP", {
@@ -77,26 +78,50 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
     return dataPoint;
   });
 
-  useEffect(() => {
-    const loadProductHistory = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchProductHistory(record.product_name);
-        setTimeSeriesData(data);
-      } catch (error) {
-        console.error("Error fetching product history:", error);
-        setError("製品履歴の取得中にエラーが発生しました。");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const loadProductHistory = async () => {
+  //     setLoading(true);
+  //     setError(null);
+  //     try {
+  //       const data = await fetchProductHistory(record.product_name);
+  //       setTimeSeriesData(data);
+  //     } catch (error) {
+  //       console.error("Error fetching product history:", error);
+  //       setError("製品履歴の取得中にエラーが発生しました。");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    loadProductHistory();
-  }, [record.product_name]);
+  //   loadProductHistory();
+  // }, [record.product_name]);
+
+  const loadProductHistory = async () => {
+    // 関数をコンポーネント内に移動
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchProductHistory(record.product_name);
+      setTimeSeriesData(data);
+      setHasLoadedData(true); // データロードが成功したらtrueに設定
+    } catch (error) {
+      console.error("Error fetching product history:", error);
+      setError("製品履歴の取得中にエラーが発生しました。");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        // ダイアログの開閉状態を監視
+        if (open && !hasLoadedData) {
+          // ダイアログが開かれた時、かつデータがまだロードされていない場合
+          loadProductHistory();
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="link" className="p-0 h-auto font-normal">
           {record.product_name}

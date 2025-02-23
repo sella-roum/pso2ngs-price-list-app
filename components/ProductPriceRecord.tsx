@@ -28,16 +28,27 @@ import { ProductDialog } from "@/components/ProductDialog";
 import { SummaryTab } from "@/components/SummaryTab";
 import { fetchLatestProducts, fetchMaxLastModifiedRecord } from "@/app/actions";
 import { ProductCard } from "@/components/ProductCard";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const MemoizedShipPopover = React.memo(ShipPopover);
 const MemoizedProductDialog = React.memo(ProductDialog);
 
 interface ProductPriceRecordProps {
   initialProducts: ProductRecord[];
+  initialCategories: string[];
+  initialGroupNames: string[];
 }
 
 export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
   initialProducts,
+  initialCategories,
+  initialGroupNames,
 }) => {
   const [records, setRecords] = useState<ProductRecord[]>(initialProducts);
   const [loading, setLoading] = useState(false);
@@ -51,6 +62,14 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [jumpToPage, setJumpToPage] = useState("");
+  const [
+    categories,
+    // setCategories
+  ] = useState<string[]>(initialCategories);
+  const [
+    groupNames,
+    // setGroupNames
+  ] = useState<string[]>(initialGroupNames);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem("userSettings");
@@ -189,25 +208,43 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
         onSubmit={handleSearch}
         className="mb-4 flex flex-wrap items-center gap-2"
       >
-        <Input
-          type="text"
-          value={searchCategory}
-          onChange={(e) => setSearchCategory(e.target.value)}
-          placeholder="カテゴリを入力"
-          className="flex-1 min-w-[200px]"
-        />
+        <Select value={searchCategory} onValueChange={setSearchCategory}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="カテゴリを選択" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全てのカテゴリ</SelectItem>
+            {categories.map(
+              (category) =>
+                category && (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                )
+            )}
+          </SelectContent>
+        </Select>
+        <Select value={searchGroupName} onValueChange={setSearchGroupName}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="グループ名を選択" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全てのグループ</SelectItem>
+            {groupNames.map(
+              (groupName) =>
+                groupName && (
+                  <SelectItem key={groupName} value={groupName}>
+                    {groupName}
+                  </SelectItem>
+                )
+            )}
+          </SelectContent>
+        </Select>
         <Input
           type="text"
           value={searchProductName}
           onChange={(e) => setSearchProductName(e.target.value)}
           placeholder="商品名を入力（部分一致）"
-          className="flex-1 min-w-[200px]"
-        />
-        <Input
-          type="text"
-          value={searchGroupName}
-          onChange={(e) => setSearchGroupName(e.target.value)}
-          placeholder="グループ名を入力"
           className="flex-1 min-w-[200px]"
         />
         <Button type="submit" disabled={loading} className="whitespace-nowrap">
