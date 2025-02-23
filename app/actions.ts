@@ -6,9 +6,6 @@ import { ProductRecord } from "@/types/product";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// console.log('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl);
-// console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey);
-
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error("Supabase URL or Anon key is missing");
   if (!supabaseUrl) console.error("NEXT_PUBLIC_SUPABASE_URL is not set");
@@ -27,9 +24,9 @@ export async function fetchLatestProducts(
   groupName: string
 ): Promise<ProductRecord[]> {
   const { data, error } = await supabase.rpc("search_products", {
-    search_category: category,
+    search_category: category === "all" ? "" : category,
     search_product_name: productName,
-    search_group_name: groupName,
+    search_group_name: groupName === "all" ? "" : groupName,
   });
 
   if (error) {
