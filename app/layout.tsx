@@ -2,7 +2,7 @@ import type React from "react";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import "./globals.css";
-import { Sidebar } from "@/components/sidebar";
+import { Sidebar } from "@/components/Sidebar";
 import { MobileFooterNav } from "@/components/ui/mobile-footer-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClientProvider } from "@/components/ClientProvider";
