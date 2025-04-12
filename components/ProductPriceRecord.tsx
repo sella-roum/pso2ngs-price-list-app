@@ -1,33 +1,22 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import Image from "next/image";
+import type React from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Loader2,
-  ArrowUp,
-  ArrowDown,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { ProductRecord } from "@/types/product";
-import { formatCurrency, getColorClass } from "@/utils/formatters";
-import { ShipPopover } from "@/components/ShipPopover";
-import { ProductDialog } from "@/components/ProductDialog";
+import { Loader2, Search, RefreshCw, Download, Filter, X } from "lucide-react";
+import type { ProductRecord, SortColumn, SortDirection } from "@/types/product";
+import { ProductTable } from "@/components/product-table";
+import { ProductCardList } from "@/components/product-card-list";
 import { SummaryTab } from "@/components/SummaryTab";
-import { fetchLatestProducts, fetchMaxLastModifiedRecord } from "@/app/actions";
-import { ProductCard } from "@/components/ProductCard";
+import {
+  fetchLatestProducts,
+  fetchMaxLastModifiedRecord,
+  refreshData,
+} from "@/app/actions";
 import {
   Select,
   SelectContent,
@@ -35,9 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const MemoizedShipPopover = React.memo(ShipPopover);
-const MemoizedProductDialog = React.memo(ProductDialog);
+import { useToast } from "@/components/ui/use-toast";
+import { Pagination } from "@/components/ui/pagination";
+import { Card, CardContent } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductPriceRecordProps {
   initialProducts: ProductRecord[];
@@ -45,76 +36,111 @@ interface ProductPriceRecordProps {
   initialGroupNames: string[];
 }
 
-export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
+export const ProductPriceRecord = ({
   initialProducts,
   initialCategories,
   initialGroupNames,
-}) => {
+}: ProductPriceRecordProps) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+
+  // URL検索パラメータから状態を取得
+  const sortColumn =
+    (searchParams.get("sortColumn") as SortColumn) || "last_modified_date";
+  const sortDirection =
+    (searchParams.get("sortDirection") as SortDirection) || "desc";
+  const searchCategory = searchParams.get("category") || "";
+  const searchProductName = searchParams.get("productName") || "";
+  const searchGroupName = searchParams.get("groupName") || "";
+  const currentPage = Number.parseInt(searchParams.get("page") || "1");
+  const itemsPerPage = Number.parseInt(
+    searchParams.get("itemsPerPage") || "10"
+  );
+
+  // ローカル状態
   const [records, setRecords] = useState<ProductRecord[]>(initialProducts);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortColumn, setSortColumn] =
-    useState<keyof ProductRecord>("last_modified_date");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [searchCategory, setSearchCategory] = useState("");
-  const [searchProductName, setSearchProductName] = useState("");
-  const [searchGroupName, setSearchGroupName] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [jumpToPage, setJumpToPage] = useState("");
-  const [
-    categories,
-    // setCategories
-  ] = useState<string[]>(initialCategories);
-  const [
-    groupNames,
-    // setGroupNames
-  ] = useState<string[]>(initialGroupNames);
+  const [localSearchCategory, setLocalSearchCategory] =
+    useState(searchCategory);
+  const [localSearchProductName, setLocalSearchProductName] =
+    useState(searchProductName);
+  const [localSearchGroupName, setLocalSearchGroupName] =
+    useState(searchGroupName);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  useEffect(() => {
-    const savedSettings = localStorage.getItem("userSettings");
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setItemsPerPage(settings.itemsPerPage || 10);
-      setSortColumn(settings.sortColumn || "last_modified_date");
-      setSortDirection(settings.sortDirection || "desc");
-    }
-  }, []);
+  // URL検索パラメータを更新する関数
+  const updateSearchParams = (params: Record<string, string>) => {
+    const newParams = new URLSearchParams(searchParams.toString());
 
-  useEffect(() => {
-    const settings = { itemsPerPage, sortColumn, sortDirection };
-    localStorage.setItem("userSettings", JSON.stringify(settings));
-  }, [itemsPerPage, sortColumn, sortDirection]);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) {
+        newParams.set(key, value);
+      } else {
+        newParams.delete(key);
+      }
+    });
 
-  const handleSort = (column: keyof ProductRecord) => {
-    if (column === sortColumn) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
+    router.push(`${pathname}?${newParams.toString()}`);
+  };
+
+  const handleSort = (column: SortColumn) => {
+    const newDirection =
+      column === sortColumn && sortDirection === "asc" ? "desc" : "asc";
+
+    updateSearchParams({
+      sortColumn: column,
+      sortDirection: newDirection,
+      page: "1", // ソート変更時は1ページ目に戻る
+    });
   };
 
   const fetchData = async (
     category: string,
     productName: string,
     groupName: string,
-    last_modified: boolean = false
+    lastModified = false
   ) => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = last_modified
+      const data = lastModified
         ? await fetchMaxLastModifiedRecord()
         : await fetchLatestProducts(category, productName, groupName);
+
       setRecords(data);
-      setCurrentPage(1);
+
+      // 検索結果が空の場合はメッセージを表示
+      if (data.length === 0 && !lastModified) {
+        toast({
+          title: "検索結果",
+          description: "条件に一致する商品が見つかりませんでした。",
+          variant: "default",
+        });
+      } else if (!lastModified) {
+        toast({
+          title: "検索完了",
+          description: `${data.length}件の商品が見つかりました。`,
+        });
+      }
+
+      // 検索成功時にページを1に戻す
+      if (!lastModified) {
+        updateSearchParams({ page: "1" });
+      }
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setError(
         "データの取得中にエラーが発生しました。ネットワーク接続を確認し、再度お試しください。エラーが続く場合は、管理者にお問い合わせください。"
       );
+      toast({
+        title: "エラー",
+        description: "データの取得中にエラーが発生しました。",
+        variant: "destructive",
+      });
       setRecords([]);
     } finally {
       setLoading(false);
@@ -123,8 +149,62 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchData(searchCategory, searchProductName, searchGroupName);
+
+    // 検索パラメータを更新
+    updateSearchParams({
+      category: localSearchCategory,
+      productName: localSearchProductName,
+      groupName: localSearchGroupName,
+      page: "1", // 検索時は1ページ目に戻る
+    });
+
+    fetchData(
+      localSearchCategory,
+      localSearchProductName,
+      localSearchGroupName
+    );
+    setIsFilterOpen(false);
   };
+
+  const handleRefresh = async () => {
+    try {
+      await refreshData();
+      toast({
+        title: "更新完了",
+        description: "データが最新の状態に更新されました。",
+      });
+      fetchData("", "", "", true);
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "データの更新に失敗しました。",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClearFilters = () => {
+    setLocalSearchCategory("");
+    setLocalSearchProductName("");
+    setLocalSearchGroupName("");
+
+    updateSearchParams({
+      category: "",
+      productName: "",
+      groupName: "",
+      page: "1",
+    });
+
+    fetchData("", "", "");
+    setIsFilterOpen(false);
+  };
+
+  // URL検索パラメータが変更されたときにローカル検索状態を更新
+  useEffect(() => {
+    setLocalSearchCategory(searchCategory);
+    setLocalSearchProductName(searchProductName);
+    setLocalSearchGroupName(searchGroupName);
+  }, [searchCategory, searchProductName, searchGroupName]);
 
   const sortedRecords = useMemo(() => {
     const sortFn = (a: ProductRecord, b: ProductRecord) => {
@@ -177,7 +257,10 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
           record.max,
           record.min,
           record.average,
-          ...Array.from({ length: 10 }, (_, i) => record[`ship${i + 1}`]),
+          ...Array.from(
+            { length: 10 },
+            (_, i) => record[`ship${i + 1}` as keyof ProductRecord]
+          ),
           record.group_name,
         ].join(",")
       ),
@@ -196,324 +279,386 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
     }
   };
 
+  const handlePageChange = (page: number) => {
+    updateSearchParams({ page: page.toString() });
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    updateSearchParams({
+      itemsPerPage: value,
+      page: "1", // 表示件数変更時は1ページ目に戻る
+    });
+  };
+
+  // アクティブなフィルターの数を計算
+  const activeFiltersCount = [
+    searchCategory,
+    searchProductName,
+    searchGroupName,
+  ].filter(Boolean).length;
+
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-bold mb-4">商品価格一覧</h1>
-      <div className="mb-4 space-y-4">
-        <Button onClick={() => fetchData("", "", "", true)} disabled={loading}>
-          {loading ? "データを取得中..." : "最終更新日のデータを取得"}
-        </Button>
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => fetchData("", "", "", true)}
+              disabled={loading}
+              className="whitespace-nowrap"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  データ取得中...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  最終更新日のデータを取得
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              className="whitespace-nowrap"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              データを更新
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="whitespace-nowrap"
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              フィルター
+              {activeFiltersCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleCSVDownload}
+              disabled={sortedRecords.length === 0}
+              variant="outline"
+              className="whitespace-nowrap"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              CSVダウンロード
+            </Button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {isFilterOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <Card>
+                <CardContent className="pt-6">
+                  <form onSubmit={handleSearch} className="space-y-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg font-medium">検索条件</h3>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearFilters}
+                        className="h-8 px-2"
+                      >
+                        <X className="mr-1 h-4 w-4" />
+                        クリア
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="category"
+                          className="text-sm font-medium"
+                        >
+                          カテゴリ
+                        </label>
+                        <Select
+                          value={localSearchCategory}
+                          onValueChange={setLocalSearchCategory}
+                        >
+                          <SelectTrigger id="category">
+                            <SelectValue placeholder="カテゴリを選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">全てのカテゴリ</SelectItem>
+                            {initialCategories.map(
+                              (category) =>
+                                category && (
+                                  <SelectItem key={category} value={category}>
+                                    {category}
+                                  </SelectItem>
+                                )
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="groupName"
+                          className="text-sm font-medium"
+                        >
+                          グループ名
+                        </label>
+                        <Select
+                          value={localSearchGroupName}
+                          onValueChange={setLocalSearchGroupName}
+                        >
+                          <SelectTrigger id="groupName">
+                            <SelectValue placeholder="グループ名を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">全てのグループ</SelectItem>
+                            {initialGroupNames.map(
+                              (groupName) =>
+                                groupName && (
+                                  <SelectItem key={groupName} value={groupName}>
+                                    {groupName}
+                                  </SelectItem>
+                                )
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label
+                          htmlFor="productName"
+                          className="text-sm font-medium"
+                        >
+                          商品名
+                        </label>
+                        <Input
+                          id="productName"
+                          type="text"
+                          value={localSearchProductName}
+                          onChange={(e) =>
+                            setLocalSearchProductName(e.target.value)
+                          }
+                          placeholder="商品名を入力（部分一致）"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsFilterOpen(false)}
+                      >
+                        キャンセル
+                      </Button>
+                      <Button type="submit" disabled={loading}>
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            検索中...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4" />
+                            検索
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* アクティブなフィルターの表示 */}
+        {activeFiltersCount > 0 && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-muted-foreground">
+              アクティブなフィルター:
+            </span>
+            {searchCategory && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                カテゴリ: {searchCategory}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 ml-1"
+                  onClick={() => {
+                    setLocalSearchCategory("");
+                    updateSearchParams({ category: "", page: "1" });
+                    fetchData("", searchProductName, searchGroupName);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )}
+            {searchGroupName && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                グループ: {searchGroupName}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 ml-1"
+                  onClick={() => {
+                    setLocalSearchGroupName("");
+                    updateSearchParams({ groupName: "", page: "1" });
+                    fetchData(searchCategory, searchProductName, "");
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )}
+            {searchProductName && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                商品名: {searchProductName}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 ml-1"
+                  onClick={() => {
+                    setLocalSearchProductName("");
+                    updateSearchParams({ productName: "", page: "1" });
+                    fetchData(searchCategory, "", searchGroupName);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
-      <form
-        onSubmit={handleSearch}
-        className="mb-4 flex flex-wrap items-center gap-2"
-      >
-        <Select value={searchCategory} onValueChange={setSearchCategory}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="カテゴリを選択" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全てのカテゴリ</SelectItem>
-            {categories.map(
-              (category) =>
-                category && (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                )
-            )}
-          </SelectContent>
-        </Select>
-        <Select value={searchGroupName} onValueChange={setSearchGroupName}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="グループ名を選択" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全てのグループ</SelectItem>
-            {groupNames.map(
-              (groupName) =>
-                groupName && (
-                  <SelectItem key={groupName} value={groupName}>
-                    {groupName}
-                  </SelectItem>
-                )
-            )}
-          </SelectContent>
-        </Select>
-        <Input
-          type="text"
-          value={searchProductName}
-          onChange={(e) => setSearchProductName(e.target.value)}
-          placeholder="商品名を入力（部分一致）"
-          className="flex-1 min-w-[200px]"
-        />
-        <Button type="submit" disabled={loading} className="whitespace-nowrap">
-          検索
-        </Button>
-      </form>
+
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertTitle>エラー</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
       {loading ? (
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-          <p className="text-sm text-gray-500">
+        <div className="flex flex-col items-center justify-center space-y-2 py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
             データを取得中です。しばらくお待ちください...
           </p>
         </div>
       ) : sortedRecords.length > 0 ? (
         <Tabs defaultValue="table" className="w-full">
-          <div className="mb-4 flex gap-2">
+          <div className="mb-4 flex flex-wrap gap-2 items-center justify-between">
             <TabsList>
               <TabsTrigger value="table">レコード一覧</TabsTrigger>
+              <TabsTrigger value="cards">カード表示</TabsTrigger>
               <TabsTrigger value="summary">サマリ</TabsTrigger>
             </TabsList>
-            <Button
-              onClick={handleCSVDownload}
-              disabled={sortedRecords.length === 0}
-            >
-              CSVダウンロード
-            </Button>
           </div>
-          <TabsContent value="table">
-            <div className="overflow-x-auto w-full">
-              <div className="hidden sm:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead onClick={() => handleSort("category")}>
-                        カテゴリ{" "}
-                        {sortColumn === "category" &&
-                          (sortDirection === "asc" ? (
-                            <ArrowUp className="inline-block w-4 h-4" />
-                          ) : (
-                            <ArrowDown className="inline-block w-4 h-4" />
-                          ))}
-                      </TableHead>
-                      <TableHead>画像</TableHead>
-                      <TableHead
-                        onClick={() => handleSort("last_modified_date")}
-                      >
-                        最終更新日{" "}
-                        {sortColumn === "last_modified_date" &&
-                          (sortDirection === "asc" ? (
-                            <ArrowUp className="inline-block w-4 h-4" />
-                          ) : (
-                            <ArrowDown className="inline-block w-4 h-4" />
-                          ))}
-                      </TableHead>
-                      <TableHead onClick={() => handleSort("product_name")}>
-                        商品名{" "}
-                        {sortColumn === "product_name" &&
-                          (sortDirection === "asc" ? (
-                            <ArrowUp className="inline-block w-4 h-4" />
-                          ) : (
-                            <ArrowDown className="inline-block w-4 h-4" />
-                          ))}
-                      </TableHead>
-                      <TableHead onClick={() => handleSort("max")}>
-                        最高価格{" "}
-                        {sortColumn === "max" &&
-                          (sortDirection === "asc" ? (
-                            <ArrowUp className="inline-block w-4 h-4" />
-                          ) : (
-                            <ArrowDown className="inline-block w-4 h-4" />
-                          ))}
-                      </TableHead>
-                      <TableHead onClick={() => handleSort("min")}>
-                        最低価格{" "}
-                        {sortColumn === "min" &&
-                          (sortDirection === "asc" ? (
-                            <ArrowUp className="inline-block w-4 h-4" />
-                          ) : (
-                            <ArrowDown className="inline-block w-4 h-4" />
-                          ))}
-                      </TableHead>
-                      <TableHead onClick={() => handleSort("average")}>
-                        平均価格{" "}
-                        {sortColumn === "average" &&
-                          (sortDirection === "asc" ? (
-                            <ArrowUp className="inline-block w-4 h-4" />
-                          ) : (
-                            <ArrowDown className="inline-block w-4 h-4" />
-                          ))}
-                      </TableHead>
-                      {Array.from({ length: 10 }, (_, i) => (
-                        <TableHead key={i}>ship{i + 1}</TableHead>
-                      ))}
-                      <TableHead onClick={() => handleSort("group_name")}>
-                        グループ名{" "}
-                        {sortColumn === "group_name" &&
-                          (sortDirection === "asc" ? (
-                            <ArrowUp className="inline-block w-4 h-4" />
-                          ) : (
-                            <ArrowDown className="inline-block w-4 h-4" />
-                          ))}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedRecords.map((record, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{record.category}</TableCell>
-                        <TableCell>
-                          {record.img && (
-                            <div className="w-32 h-32 relative overflow-hidden">
-                              <Image
-                                src={record.img}
-                                alt={record.product_name}
-                                width={128}
-                                height={128}
-                                className="absolute inset-0 w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>{record.last_modified_date}</TableCell>
-                        <TableCell>
-                          <MemoizedProductDialog record={record} />
-                        </TableCell>
-                        <TableCell className="bg-red-100 font-bold">
-                          {formatCurrency(record.max)}
-                        </TableCell>
-                        <TableCell className="bg-blue-100 font-bold">
-                          {formatCurrency(record.min)}
-                        </TableCell>
-                        <TableCell>{formatCurrency(record.average)}</TableCell>
-                        {Array.from({ length: 10 }, (_, i) => {
-                          const shipKey = `ship${i + 1}`;
-                          const shipValue = record[shipKey] as number;
-                          const colorClass = getColorClass(
-                            shipValue,
-                            record.max,
-                            record.min
-                          );
-                          return (
-                            <TableCell key={i} className={colorClass}>
-                              <MemoizedShipPopover
-                                record={record}
-                                shipKey={shipKey}
-                              />
-                            </TableCell>
-                          );
-                        })}
-                        <TableCell>{record.group_name}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="sm:hidden space-y-4">
-                {paginatedRecords.map((record, index) => (
-                  <ProductCard key={index} record={record} />
-                ))}
-              </div>
+
+          <TabsContent value="table" className="animate-fade-in">
+            <div className="hidden sm:block">
+              <ProductTable
+                records={paginatedRecords}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+              />
             </div>
-            <div className="mt-4 flex flex-col items-center gap-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Input
-                  type="number"
-                  value={jumpToPage}
-                  onChange={(e) => setJumpToPage(e.target.value)}
-                  placeholder="ページ番号"
-                  className="w-24"
-                />
-                <Button
-                  onClick={() => {
-                    const page = parseInt(jumpToPage);
-                    if (page >= 1 && page <= totalPages) {
-                      setCurrentPage(page);
-                      setJumpToPage("");
-                    }
-                  }}
-                  disabled={!jumpToPage}
-                >
-                  ジャンプ
-                </Button>
-                <span className="mr-2">1ページあたりの表示件数:</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="border rounded p-1"
-                >
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                  <option value="50">50</option>
-                </select>
+            <div className="sm:hidden">
+              <ProductCardList records={paginatedRecords} />
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">1ページあたりの表示件数:</span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={handleItemsPerPageChange}
+                  >
+                    <SelectTrigger className="w-[80px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  全 {sortedRecords.length} 件中{" "}
+                  {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                  {Math.min(currentPage * itemsPerPage, sortedRecords.length)}{" "}
+                  件を表示
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(
-                    (pageNum) =>
-                      pageNum === 1 ||
-                      pageNum === totalPages ||
-                      (pageNum >= currentPage - 2 && pageNum <= currentPage + 2)
-                  )
-                  .map((pageNum, i, array) => {
-                    if (i > 0 && array[i - 1] !== pageNum - 1) {
-                      return (
-                        <React.Fragment key={`ellipsis-${pageNum}`}>
-                          <span className="px-2">...</span>
-                          <Button
-                            variant={
-                              currentPage === pageNum ? "default" : "outline"
-                            }
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={
-                              currentPage === pageNum
-                                ? "bg-blue-500 text-white"
-                                : ""
-                            }
-                          >
-                            {pageNum}
-                          </Button>
-                        </React.Fragment>
-                      );
-                    }
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={
-                          currentPage === pageNum ? "default" : "outline"
-                        }
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={
-                          currentPage === pageNum
-                            ? "bg-blue-500 text-white"
-                            : ""
-                        }
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             </div>
           </TabsContent>
-          <TabsContent value="summary">
+
+          <TabsContent value="cards" className="animate-fade-in">
+            <ProductCardList records={paginatedRecords} />
+
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">1ページあたりの表示件数:</span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={handleItemsPerPageChange}
+                  >
+                    <SelectTrigger className="w-[80px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  全 {sortedRecords.length} 件中{" "}
+                  {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                  {Math.min(currentPage * itemsPerPage, sortedRecords.length)}{" "}
+                  件を表示
+                </div>
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="summary" className="animate-fade-in">
             <SummaryTab records={sortedRecords} />
           </TabsContent>
         </Tabs>
@@ -522,7 +667,7 @@ export const ProductPriceRecord: React.FC<ProductPriceRecordProps> = ({
           <p className="text-xl font-semibold text-gray-700">
             データがありません
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             検索条件を変更するか、新しいデータを追加してください。
           </p>
         </div>

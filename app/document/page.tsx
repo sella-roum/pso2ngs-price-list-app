@@ -8,8 +8,8 @@ export default function DocumentPage() {
   const documentContent = fs.readFileSync(documentPath, "utf8");
 
   return (
-    <div className="mx-auto py-8 px-4">
-      <div className="container prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none">
+    <div className="justify-center py-8 px-4">
+      <div className="prose prose-sm mx-auto sm:prose lg:prose-lg xl:prose-xl">
         <ReactMarkdown>{documentContent}</ReactMarkdown>
       </div>
     </div>
