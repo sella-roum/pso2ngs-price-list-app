@@ -10,7 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart2,
-  Menu,
+  // Menu,
   Home,
   Moon,
   Sun,
@@ -44,17 +44,17 @@ export function Sidebar() {
     },
   ];
 
-  // モバイル用のハンバーガーメニュー
-  const MobileMenu = () => (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="fixed top-4 left-4 z-50 md:hidden"
-      onClick={toggleSidebar}
-    >
-      <Menu className="h-5 w-5" />
-    </Button>
-  );
+  // // モバイル用のハンバーガーメニュー
+  // const MobileMenu = () => (
+  //   <Button
+  //     variant="ghost"
+  //     size="icon"
+  //     className="fixed top-4 left-4 z-50 md:hidden"
+  //     onClick={toggleSidebar}
+  //   >
+  //     <Menu className="h-5 w-5" />
+  //   </Button>
+  // );
 
   return (
     <>
