@@ -25,14 +25,26 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { fetchProductAnalysisData } from "@/app/actions";
-import { formatCurrency } from "@/utils/formatters";
-import type { AnalysisResult } from "@/lib/validations/product";
+import { formatCurrency, formatShortDate } from "@/utils/formatters";
+// AnalysisResult 型と ProductRecord 型をインポート
+import type {
+  AnalysisResult,
+  // DailyAnalysis,
+  // ProductSummary,
+} from "@/lib/validations/product";
+import type { ProductRecord } from "@/types/product"; // ProductRecord 型をインポート
+import Image from "next/image";
+// ProductDialog をインポート
+import { ProductDialog } from "@/components/ProductDialog";
 
 export function AnalysisResult() {
   const searchParams = useSearchParams();
-  const targetType = searchParams.get("targetType") as "product" | "category";
+  const targetType = searchParams.get("targetType") as
+    | "product"
+    | "category"
+    | null;
   const targetName = searchParams.get("targetName");
-  const period = searchParams.get("period") as "7d" | "30d" | "all";
+  const period = searchParams.get("period") as "7d" | "30d" | "all" | null;
 
   const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,11 +52,15 @@ export function AnalysisResult() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!targetType || !targetName || !period) return;
-
+      if (!targetType || !targetName || !period) {
+        setAnalysisData(null);
+        setLoading(false);
+        setError(null);
+        return;
+      }
       setLoading(true);
       setError(null);
-
+      setAnalysisData(null);
       try {
         const data = await fetchProductAnalysisData(
           targetType,
@@ -63,11 +79,9 @@ export function AnalysisResult() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [targetType, targetName, period]);
 
-  // パラメータがない場合は初期メッセージを表示;
   if (!targetType || !targetName || !period) {
     return (
       <div className="text-center py-8">
@@ -79,9 +93,6 @@ export function AnalysisResult() {
   }
 
   if (loading) {
-    // ローディング表示は Suspense fallback でカバーされるため、
-    // このコンポーネント内のローディング表示は削除しても良いが、
-    // より細かい制御が必要な場合は残す
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -99,61 +110,99 @@ export function AnalysisResult() {
     );
   }
 
-  if (!analysisData) {
+  if (
+    !analysisData ||
+    (!analysisData.daily_trends.length && !analysisData.product_summary.length)
+  ) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">
-          分析条件を設定して「分析実行」ボタンをクリックしてください。
+          指定された条件の分析データが見つかりませんでした。
         </p>
       </div>
     );
   }
 
   // グラフ用のデータ整形
-  const chartData = analysisData.dates.map((date, index) => ({
-    date,
-    最高価格: analysisData.maxPrices[index],
-    最低価格: analysisData.minPrices[index],
-    平均価格: analysisData.avgPrices[index],
-    中央値: analysisData.medianPrices[index],
+  const chartData = analysisData.daily_trends.map((item) => ({
+    date: formatShortDate(item.date),
+    最高価格: item.max_price,
+    最低価格: item.min_price,
+    平均価格: item.avg_price,
+    中央値: item.median_price,
   }));
 
+  // 前日比をフォーマットする関数
+  const formatChangePercent = (value: number | null): string => {
+    if (value === null || value === undefined || isNaN(value)) return "-";
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${value.toFixed(2)}%`;
+  };
+
+  // 期間全体の変動率をフォーマット
+  const formatPeriodChangePercent = (value: number | null): string => {
+    if (value === null || value === undefined || isNaN(value)) return "-";
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${value.toFixed(2)}%`;
+  };
+
   return (
-    <Tabs defaultValue="chart">
+    <Tabs defaultValue="daily-chart">
       <TabsList>
-        <TabsTrigger value="chart">グラフ</TabsTrigger>
-        <TabsTrigger value="table">表</TabsTrigger>
+        <TabsTrigger value="daily-chart">日毎トレンド (グラフ)</TabsTrigger>
+        <TabsTrigger value="daily-table">日毎トレンド (表)</TabsTrigger>
+        {analysisData.product_summary.length > 0 && (
+          <TabsTrigger value="product-summary">商品別サマリー</TabsTrigger>
+        )}
       </TabsList>
 
-      <TabsContent value="chart" className="mt-4">
+      {/* --- 日毎トレンド (グラフ) --- */}
+      <TabsContent value="daily-chart" className="mt-4">
         <Card>
           <CardContent className="pt-6">
             <div className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis dataKey="date" fontSize={12} tickMargin={5} />
                   <YAxis
                     tickFormatter={(value) => formatCurrency(value)}
                     width={80}
+                    fontSize={12}
                   />
                   <Tooltip
-                    formatter={(value) => formatCurrency(value as number)}
+                    formatter={(value, name) => [
+                      formatCurrency(value as number),
+                      name,
+                    ]}
+                    labelFormatter={(label) => `日付: ${label}`}
                   />
                   <Legend />
                   <Line
                     type="monotone"
                     dataKey="最高価格"
                     stroke="#ef4444"
-                    activeDot={{ r: 8 }}
+                    activeDot={{ r: 6 }}
+                    dot={false}
                   />
-                  <Line type="monotone" dataKey="最低価格" stroke="#3b82f6" />
-                  <Line type="monotone" dataKey="平均価格" stroke="#10b981" />
+                  <Line
+                    type="monotone"
+                    dataKey="最低価格"
+                    stroke="#3b82f6"
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="平均価格"
+                    stroke="#10b981"
+                    dot={false}
+                  />
                   <Line
                     type="monotone"
                     dataKey="中央値"
                     stroke="#8b5cf6"
-                    strokeDasharray="5 5"
+                    strokeDasharray="3 3"
+                    dot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -162,7 +211,8 @@ export function AnalysisResult() {
         </Card>
       </TabsContent>
 
-      <TabsContent value="table" className="mt-4">
+      {/* --- 日毎トレンド (表) --- */}
+      <TabsContent value="daily-table" className="mt-4">
         <Card>
           <CardContent className="pt-6">
             <div className="overflow-x-auto">
@@ -181,64 +231,72 @@ export function AnalysisResult() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {analysisData.dailyChanges.map((item) => (
+                  {analysisData.daily_trends.map((item) => (
                     <TableRow key={item.date}>
-                      <TableCell>{item.date}</TableCell>
-                      <TableCell>{formatCurrency(item.max)}</TableCell>
-                      <TableCell>{formatCurrency(item.min)}</TableCell>
-                      <TableCell>{formatCurrency(item.avg)}</TableCell>
-                      <TableCell>{formatCurrency(item.median)}</TableCell>
-                      <TableCell
-                        className={
-                          item.maxChange > 0
-                            ? "text-red-500"
-                            : item.maxChange < 0
-                            ? "text-green-500"
-                            : ""
-                        }
-                      >
-                        {item.maxChange !== 0
-                          ? formatCurrency(item.maxChange)
-                          : "-"}
+                      <TableCell>{formatShortDate(item.date)}</TableCell>
+                      <TableCell>
+                        {formatCurrency(item.max_price ?? 0)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(item.min_price ?? 0)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(item.avg_price ?? 0)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(item.median_price ?? 0)}
                       </TableCell>
                       <TableCell
                         className={
-                          item.minChange > 0
-                            ? "text-red-500"
-                            : item.minChange < 0
-                            ? "text-green-500"
-                            : ""
+                          item.max_price_change_pct &&
+                          item.max_price_change_pct > 0
+                            ? "text-red-600"
+                            : item.max_price_change_pct &&
+                              item.max_price_change_pct < 0
+                            ? "text-green-600"
+                            : "text-muted-foreground"
                         }
                       >
-                        {item.minChange !== 0
-                          ? formatCurrency(item.minChange)
-                          : "-"}
+                        {formatChangePercent(item.max_price_change_pct)}
                       </TableCell>
                       <TableCell
                         className={
-                          item.avgChange > 0
-                            ? "text-red-500"
-                            : item.avgChange < 0
-                            ? "text-green-500"
-                            : ""
+                          item.min_price_change_pct &&
+                          item.min_price_change_pct > 0
+                            ? "text-red-600"
+                            : item.min_price_change_pct &&
+                              item.min_price_change_pct < 0
+                            ? "text-green-600"
+                            : "text-muted-foreground"
                         }
                       >
-                        {item.avgChange !== 0
-                          ? formatCurrency(item.avgChange)
-                          : "-"}
+                        {formatChangePercent(item.min_price_change_pct)}
                       </TableCell>
                       <TableCell
                         className={
-                          item.medianChange > 0
-                            ? "text-red-500"
-                            : item.medianChange < 0
-                            ? "text-green-500"
-                            : ""
+                          item.avg_price_change_pct &&
+                          item.avg_price_change_pct > 0
+                            ? "text-red-600"
+                            : item.avg_price_change_pct &&
+                              item.avg_price_change_pct < 0
+                            ? "text-green-600"
+                            : "text-muted-foreground"
                         }
                       >
-                        {item.medianChange !== 0
-                          ? formatCurrency(item.medianChange)
-                          : "-"}
+                        {formatChangePercent(item.avg_price_change_pct)}
+                      </TableCell>
+                      <TableCell
+                        className={
+                          item.median_price_change_pct &&
+                          item.median_price_change_pct > 0
+                            ? "text-red-600"
+                            : item.median_price_change_pct &&
+                              item.median_price_change_pct < 0
+                            ? "text-green-600"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {formatChangePercent(item.median_price_change_pct)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -248,6 +306,113 @@ export function AnalysisResult() {
           </CardContent>
         </Card>
       </TabsContent>
+
+      {/* --- 商品別サマリー --- */}
+      {analysisData.product_summary.length > 0 && (
+        <TabsContent value="product-summary" className="mt-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>画像</TableHead>
+                      <TableHead>商品名</TableHead>
+                      <TableHead>期間最高値</TableHead>
+                      <TableHead>期間最低値</TableHead>
+                      <TableHead>期間平均値</TableHead>
+                      <TableHead>開始価格</TableHead>
+                      <TableHead>終了価格</TableHead>
+                      <TableHead>期間変動率</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {analysisData.product_summary.map((item) => {
+                      // ProductDialog に渡すための ProductRecord オブジェクトを生成
+                      const dialogRecord: ProductRecord = {
+                        id: 0, // ダミーID
+                        product_name: item.product_name,
+                        img: item.img,
+                        category:
+                          targetType === "category"
+                            ? targetName ?? "不明"
+                            : "不明", // カテゴリ分析時はtargetNameを使用
+                        group_name: "不明", // DB関数で取得推奨
+                        max: item.period_max ?? 0,
+                        min: item.period_min ?? 0,
+                        average: item.period_avg ?? 0,
+                        last_modified_date: new Date().toISOString(), // ダミー
+                        ships: {}, // ダミー
+                        ship1: null,
+                        ship2: null,
+                        ship3: null,
+                        ship4: null,
+                        ship5: null,
+                        ship6: null,
+                        ship7: null,
+                        ship8: null,
+                        ship9: null,
+                        ship10: null,
+                      };
+
+                      return (
+                        <TableRow key={item.product_name}>
+                          <TableCell>
+                            {item.img ? (
+                              <Image
+                                src={item.img}
+                                alt={item.product_name}
+                                width={40}
+                                height={40}
+                                className="rounded"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
+                                No Img
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {/* ProductDialog を商品名部分に配置 */}
+                            <ProductDialog record={dialogRecord} />
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(item.period_max ?? 0)}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(item.period_min ?? 0)}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(item.period_avg ?? 0)}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(item.start_price ?? 0)}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(item.end_price ?? 0)}
+                          </TableCell>
+                          <TableCell
+                            className={
+                              item.price_change_pct && item.price_change_pct > 0
+                                ? "text-red-600"
+                                : item.price_change_pct &&
+                                  item.price_change_pct < 0
+                                ? "text-green-600"
+                                : "text-muted-foreground"
+                            }
+                          >
+                            {formatPeriodChangePercent(item.price_change_pct)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

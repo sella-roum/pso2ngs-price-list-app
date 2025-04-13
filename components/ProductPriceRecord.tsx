@@ -174,7 +174,7 @@ export const ProductPriceRecord = ({
         description: "データが最新の状態に更新されました。",
       });
       fetchData("", "", "", true);
-    } catch (error) {
+    } catch {
       toast({
         title: "エラー",
         description: "データの更新に失敗しました。",
@@ -567,7 +567,7 @@ export const ProductPriceRecord = ({
           <div className="mb-4 flex flex-wrap gap-2 items-center justify-between">
             <TabsList>
               <TabsTrigger value="table">レコード一覧</TabsTrigger>
-              <TabsTrigger value="cards">カード表示</TabsTrigger>
+              {/* <TabsTrigger value="cards">カード表示</TabsTrigger> */}
               <TabsTrigger value="summary">サマリ</TabsTrigger>
             </TabsList>
           </div>
