@@ -1,28 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react"; // useEffect をインポート
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  // DialogClose, // DialogClose をインポート
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { ProductRecord, ShipKey } from "@/types/product";
-import {
-  formatCurrency,
-  getColorClass,
-  formatDate,
-  formatShortDate,
-} from "@/utils/formatters"; // formatShortDate もインポート
+import type { ProductRecord, ShipKey } from "@/types/product"; // ShipKey をインポート
+import { formatCurrency, getColorClass, formatDate } from "@/utils/formatters"; // formatDate をインポート
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Loader2,
-  // X
-} from "lucide-react"; // X アイコンをインポート
+import { Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -43,12 +34,11 @@ import {
 } from "recharts";
 import { ShipPopover } from "@/components/ShipPopover";
 import { fetchProductHistory } from "@/app/actions";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { ProductCard } from "@/components/ProductCard";
-import { cn } from "@/lib/utils"; // cn ユーティリティをインポート
+import { useIsMobile } from "@/hooks/use-mobile"; // モバイル判定フックをインポート
+import { ProductCard } from "@/components/ProductCard"; // モバイル用カードをインポート
 
 interface ProductDialogProps {
-  record: ProductRecord;
+  record: ProductRecord; // 初期表示用のレコード
 }
 
 export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
@@ -59,7 +49,10 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasLoadedData, setHasLoadedData] = useState(false);
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(); // モバイル判定フックを使用
+
+  // formatDate は utils からインポートするため不要
+  // const formatDate = (dateString: string) => { ... };
 
   const handleShipToggle = (shipName: string) => {
     setSelectedShips((prev) =>
@@ -73,9 +66,11 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
     );
   };
 
+  // グラフ用データ (変更なし)
   const chartData = timeSeriesData.map((historyRecord) => {
     const dataPoint: { [key: string]: string | number } = {
-      date: formatShortDate(historyRecord.last_modified_date), // 短縮形を使用
+      // 日付のフォーマットを短縮形に変更 (グラフX軸用)
+      date: formatDate(historyRecord.last_modified_date).split(" ")[0], // YYYY/MM/DD 形式
     };
     (Array.from({ length: 10 }, (_, i) => `ship${i + 1}`) as ShipKey[]).forEach(
       (shipName) => {
@@ -89,13 +84,14 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
     setLoading(true);
     setError(null);
     try {
+      // record.product_name を使用して履歴を取得
       const data = await fetchProductHistory(record.product_name);
       setTimeSeriesData(data);
       setHasLoadedData(true);
     } catch (error) {
       console.error("Error fetching product history:", error);
       setError("製品履歴の取得中にエラーが発生しました。");
-      setTimeSeriesData([]);
+      setTimeSeriesData([]); // エラー時はデータを空にする
     } finally {
       setLoading(false);
     }
@@ -103,14 +99,13 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
 
   // ダイアログが開かれたときにデータを読み込む
   useEffect(() => {
-    // record.product_name が変更された場合にも対応 (任意)
-    // if (record.product_name && hasLoadedData) {
-    //   // 必要であればデータをリセットして再読み込み
-    //   setTimeSeriesData([]);
-    //   setHasLoadedData(false);
+    // このuseEffectはダイアログの開閉とは別に、
+    // record.product_name が変更された場合にも対応できるように残すか検討
+    // 今回は onOpenChange で制御するためコメントアウト or 削除
+    // if (record.product_name && !hasLoadedData) {
     //   loadProductHistory();
     // }
-  }, [record.product_name]); // hasLoadedData を依存配列から削除
+  }, [record.product_name, hasLoadedData]); // 依存配列を調整
 
   return (
     <Dialog
@@ -118,32 +113,30 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
         if (open && !hasLoadedData) {
           loadProductHistory();
         }
+        // ダイアログが閉じられたときにデータをリセットする（任意）
+        // if (!open) {
+        //   setTimeSeriesData([]);
+        //   setHasLoadedData(false);
+        //   setError(null);
+        // }
       }}
     >
       <DialogTrigger asChild>
         <Button variant="link" className="p-0 h-auto font-normal text-left">
+          {" "}
+          {/* text-left を追加 */}
           {record.product_name}
         </Button>
       </DialogTrigger>
-      {/* DialogContent のスタイルを修正 */}
-      <DialogContent
-        className={cn(
-          "flex h-full w-full flex-col border-none bg-background p-0", // モバイルデフォルト: 全面表示、ボーダーなし、パディングなし
-          "sm:inset-auto sm:h-auto sm:max-h-[85vh] sm:w-full sm:max-w-[80vw]", // デスクトップ: 中央表示、サイズ制限
-          "sm:rounded-lg sm:border sm:p-6" // デスクトップ: 角丸、ボーダー、パディング
-        )}
-      >
-        {/* ヘッダー: モバイルでもパディングを持たせる */}
-        <DialogHeader className="px-6 pt-6 sm:px-0 sm:pt-0">
+      {/* ダイアログのサイズ調整 */}
+      <DialogContent className="max-w-[100vw] max-h-[100vh] w-full h-full sm:max-w-[80vw] sm:max-h-[80vh] sm:h-auto overflow-y-auto">
+        <DialogHeader>
           <DialogTitle>{record.product_name} の価格遷移</DialogTitle>
-          {/* モバイル用に閉じるボタンをヘッダーに追加 */}
-          {/* <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground sm:hidden">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogClose> */}
         </DialogHeader>
-        {/* コンテンツ部分: パディングを適用し、スクロール可能に */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 sm:px-0 sm:pb-0">
+        {/* コンテンツ部分をflex-1とoverflow-y-autoでスクロール可能に */}
+        <div className="flex-1 overflow-y-auto pr-6 -mr-6 pl-6 -ml-6">
+          {" "}
+          {/* パディング調整 */}
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full space-y-2">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -158,7 +151,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             </div>
-          ) : !hasLoadedData || timeSeriesData.length === 0 ? (
+          ) : !hasLoadedData || timeSeriesData.length === 0 ? ( // hasLoadedDataもチェック
             <div className="flex items-center justify-center h-full text-center py-4">
               <div>
                 <p className="text-lg font-semibold text-muted-foreground">
@@ -181,7 +174,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                   (shipName) => (
                     <div key={shipName} className="flex items-center space-x-2">
                       <Checkbox
-                        id={`dialog-ship-${shipName}`}
+                        id={`dialog-ship-${shipName}`} // IDが重複しないようにプレフィックス追加
                         checked={selectedShips.includes(shipName)}
                         onCheckedChange={() => handleShipToggle(shipName)}
                       />
@@ -198,9 +191,10 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
               {/* グラフ表示 */}
               <TabsContent value="graph">
                 <div className="mt-4">
-                  <div className="h-[400px] sm:h-[45vh]">
+                  {/* <h3 className="text-lg font-semibold mb-2">価格遷移グラフ</h3> */}
+                  <div className="h-[400px] sm:h-[50vh]">
                     {" "}
-                    {/* 高さを少し調整 */}
+                    {/* 高さを調整 */}
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -223,9 +217,9 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                             key={shipName}
                             type="monotone"
                             dataKey={shipName}
-                            stroke={`hsl(${index * 36}, 70%, 50%)`}
+                            stroke={`hsl(${index * 36}, 70%, 50%)`} // 色を調整しても良い
                             hide={!selectedShips.includes(shipName)}
-                            dot={false}
+                            dot={false} // 点を非表示に
                             activeDot={{ r: 6 }}
                           />
                         ))}
@@ -237,6 +231,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
               {/* 表表示 (レスポンシブ対応) */}
               <TabsContent value="table">
                 <div className="mt-4">
+                  {/* <h3 className="text-lg font-semibold mb-2">価格遷移表</h3> */}
                   {isMobile ? (
                     // モバイル表示: ProductCard のリスト
                     <div className="space-y-4">
@@ -247,6 +242,8 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                   ) : (
                     // デスクトップ表示: テーブル
                     <div className="overflow-x-auto table-container">
+                      {" "}
+                      {/* table-container クラス適用 */}
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -254,6 +251,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                             <TableHead>最高価格</TableHead>
                             <TableHead>最低価格</TableHead>
                             <TableHead>平均価格</TableHead>
+                            {/* 選択されたShipのみ表示 */}
                             {Array.from(
                               { length: 10 },
                               (_, i) => `ship${i + 1}`
@@ -281,6 +279,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                               <TableCell>
                                 {formatCurrency(historyRecord.average)}
                               </TableCell>
+                              {/* 選択されたShipのみ表示 */}
                               {Array.from(
                                 { length: 10 },
                                 (_, i) => `ship${i + 1}` as ShipKey
@@ -302,6 +301,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                                       key={shipName}
                                       className={colorClass}
                                     >
+                                      {/* ShipPopover を使用 */}
                                       <ShipPopover
                                         record={historyRecord}
                                         shipKey={shipName}

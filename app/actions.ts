@@ -309,7 +309,7 @@ export async function fetchProductAnalysisData(
       targetName,
       period,
     });
-    console.log("分析パラメータ (検証済):", validatedParams);
+    // console.log("分析パラメータ (検証済):", validatedParams);
 
     const supabase = createServerSupabaseClient();
     const endDate = new Date();
@@ -340,7 +340,7 @@ export async function fetchProductAnalysisData(
       throw new Error(`分析データの取得に失敗しました: ${error.message}`);
     }
 
-    console.log("DB関数からの分析結果:", data);
+    // console.log("DB関数からの分析結果:", data);
 
     // DB関数が期待通り JSONB オブジェクトを返すと仮定
     // data が null や undefined の場合、空の結果を返す
