@@ -76,17 +76,7 @@
     @apply transition-colors duration-200 hover:bg-primary/10 rounded-md;
   }
 
-  .animate-fade-in {
-    @apply animate-in fade-in duration-500;
-  }
-
-  .animate-slide-up {
-    @apply animate-in slide-in-from-bottom-4 duration-500;
-  }
-
-  .animate-slide-left {
-    @apply animate-in slide-in-from-right-4 duration-500;
-  }
+  /* .animate-* の定義をここから削除 */
 }
 
 /* カスタムスクロールバー */
