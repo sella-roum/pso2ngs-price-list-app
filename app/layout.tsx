@@ -1,5 +1,4 @@
 import type React from "react";
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
@@ -7,13 +6,12 @@ import { MobileFooterNav } from "@/components/ui/mobile-footer-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClientProvider } from "@/components/ClientProvider";
 import { Toaster } from "@/components/ui/toaster";
-import { Analytics } from "@/components/analytics";
+import { ComparisonButton } from "@/components/comparison-button";
 
 export const metadata: Metadata = {
   title: "PSO2NGS 商品価格一覧",
   description:
     "「Phantasy Star Online 2 New Genesis（PSO2NGS）」内で販売されているアイテムの価格を、シップごとに一覧表示するアプリです。",
-  generator: "v0.dev",
 };
 
 export default function RootLayout({
@@ -34,14 +32,14 @@ export default function RootLayout({
                 </main>
               </div>
               <MobileFooterNav />
+              <ComparisonButton />
             </div>
             <Toaster />
-            <Suspense fallback={null}>
-              <Analytics />
-            </Suspense>
           </ClientProvider>
         </ThemeProvider>
       </body>
     </html>
   );
 }
+
+import "./globals.css";

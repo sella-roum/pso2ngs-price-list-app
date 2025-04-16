@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -76,7 +76,34 @@
     @apply transition-colors duration-200 hover:bg-primary/10 rounded-md;
   }
 
-  /* .animate-* の定義をここから削除 */
+  .animate-fade-in {
+    @apply animate-in fade-in duration-500;
+  }
+
+  .animate-slide-up {
+    @apply animate-in slide-in-from-bottom-4 duration-500;
+  }
+
+  .animate-slide-left {
+    @apply animate-in slide-in-from-right-4 duration-500;
+  }
+
+  /* 新しいユーティリティクラス */
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-[0_0_15px_rgba(59,130,246,0.5)];
+  }
+
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
 /* カスタムスクロールバー */
@@ -86,7 +113,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-secondary/50;
+  @apply bg-secondary/50 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -99,7 +126,7 @@
 
 /* テーブルのスタイル改善 */
 .table-container {
-  @apply overflow-x-auto rounded-lg border border-border shadow-sm;
+  @apply overflow-x-auto rounded-lg border border-border shadow-sm max-w-full;
 }
 
 table {
@@ -107,7 +134,7 @@ table {
 }
 
 th {
-  @apply bg-muted px-4 py-3 text-left text-sm font-medium text-muted-foreground;
+  @apply bg-muted px-4 py-3 text-left text-sm font-medium text-muted-foreground sticky top-0 z-10;
 }
 
 td {
@@ -159,4 +186,36 @@ tr:hover td {
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 300ms, transform 300ms;
+}
+
+/* コンテナの最大幅を調整 */
+.container {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+}
+
+/* テーブルのレスポンシブ対応を強化 */
+@media (max-width: 1024px) {
+  .table-responsive-lg {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
