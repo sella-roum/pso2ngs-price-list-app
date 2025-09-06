@@ -1,6 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AnalysisResultSkeleton() {
   return (
@@ -36,5 +36,5 @@ export function AnalysisResultSkeleton() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import type { ProductRecord } from "@/types/product"
-import { ProductCard } from "@/components/ProductCard"
-import { motion } from "framer-motion"
+import type { ProductRecord } from "@/types/product";
+import { ProductCard } from "@/components/ProductCard";
+import { motion } from "framer-motion";
 
 interface ProductCardListProps {
-  records: ProductRecord[]
+  records: ProductRecord[];
 }
 
 export function ProductCardList({ records }: ProductCardListProps) {
@@ -13,7 +13,7 @@ export function ProductCardList({ records }: ProductCardListProps) {
     <>
       {records.map((record, index) => (
         <motion.div
-          key={record.id || index}
+          key={record.id ?? `${record.product_name}-${record.last_modified_date}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -22,5 +22,5 @@ export function ProductCardList({ records }: ProductCardListProps) {
         </motion.div>
       ))}
     </>
-  )
+  );
 }

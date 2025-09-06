@@ -21,9 +21,7 @@ export default function Error({ error, reset }: ErrorProps) {
         <AlertTitle>エラーが発生しました</AlertTitle>
         <AlertDescription>
           データの読み込み中に問題が発生しました。
-          <p className="mt-2 font-mono text-sm bg-muted p-2 rounded">
-            {error.message || "不明なエラーです。"}
-          </p>
+          <p className="mt-2 font-mono text-sm bg-muted p-2 rounded">{error.message || "不明なエラーです。"}</p>
         </AlertDescription>
       </Alert>
       <div className="mt-6 text-center">

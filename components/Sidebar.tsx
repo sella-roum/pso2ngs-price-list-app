@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { FileText, ChevronLeft, ChevronRight, BarChart2, Home, Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
-import { motion } from "framer-motion"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { FileText, ChevronLeft, ChevronRight, BarChart2, Home, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { motion } from "framer-motion";
 
 export function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
-  const pathname = usePathname()
-  const { theme, setTheme } = useTheme()
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    setIsMounted(true)
-  }, [])
+    setIsMounted(true);
+  }, []);
 
-  const toggleSidebar = () => setIsOpen(!isOpen)
+  const toggleSidebar = () => setIsOpen(!isOpen);
 
   const menuItems = [
     { href: "/", label: "商品価格一覧", icon: <Home className="h-5 w-5" /> },
@@ -33,7 +33,7 @@ export function Sidebar() {
       label: "使用説明書",
       icon: <FileText className="h-5 w-5" />,
     },
-  ]
+  ];
 
   return (
     <>
@@ -56,20 +56,21 @@ export function Sidebar() {
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href}>
-                    <Button
-                      variant={pathname === item.href ? "default" : "ghost"}
-                      className={cn(
-                        "w-full justify-start nav-item",
-                        isOpen ? "" : "px-2",
-                        pathname === item.href ? "bg-primary text-primary-foreground" : "",
-                      )}
-                      title={item.label}
-                    >
+                  <Button
+                    asChild
+                    variant={pathname === item.href ? "default" : "ghost"}
+                    className={cn(
+                      "w-full justify-start nav-item",
+                      isOpen ? "" : "px-2",
+                      pathname === item.href ? "bg-primary text-primary-foreground" : "",
+                    )}
+                    title={item.label}
+                  >
+                    <Link href={item.href}>
                       <span className={cn("", isOpen ? "mr-2" : "")}>{item.icon}</span>
                       {isOpen && <span className="truncate">{item.label}</span>}
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -83,6 +84,7 @@ export function Sidebar() {
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="w-full justify-center mb-2"
                 title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+                aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
               >
                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
@@ -128,18 +130,19 @@ export function Sidebar() {
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} onClick={() => setIsOpen(false)}>
-                    <Button
-                      variant={pathname === item.href ? "default" : "ghost"}
-                      className={cn(
-                        "w-full justify-start nav-item",
-                        pathname === item.href ? "bg-primary text-primary-foreground" : "",
-                      )}
-                    >
+                  <Button
+                    asChild
+                    variant={pathname === item.href ? "default" : "ghost"}
+                    className={cn(
+                      "w-full justify-start nav-item",
+                      pathname === item.href ? "bg-primary text-primary-foreground" : "",
+                    )}
+                  >
+                    <Link href={item.href} onClick={() => setIsOpen(false)}>
                       <span className="mr-2">{item.icon}</span>
                       <span>{item.label}</span>
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -169,5 +172,5 @@ export function Sidebar() {
         </div>
       </motion.div>
     </>
-  )
+  );
 }

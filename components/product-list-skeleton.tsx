@@ -1,9 +1,9 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export function ProductListSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" role="status" aria-live="polite" aria-busy="true">
       <div className="flex flex-wrap gap-2 items-end">
         <Skeleton className="h-10 w-[200px]" />
         <Skeleton className="h-10 w-[200px]" />
@@ -38,5 +38,5 @@ export function ProductListSkeleton() {
         <Skeleton className="h-10 w-10" />
       </div>
     </div>
-  )
+  );
 }

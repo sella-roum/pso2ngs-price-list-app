@@ -22,14 +22,12 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <body className="antialiased">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ClientProvider>
             <div className="flex min-h-screen bg-gradient-to-br from-background to-background/95">
               <Sidebar />
               <div className="flex-1 transition-all duration-300 ease-in-out md:ml-16 pb-16 md:pb-0">
-                <main className="container mx-auto p-4 animate-fade-in">
-                  {children}
-                </main>
+                <main className="container mx-auto p-4 animate-fade-in">{children}</main>
               </div>
               <MobileFooterNav />
               <ComparisonButton />
@@ -41,5 +39,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-import "./globals.css";

@@ -1,30 +1,29 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useMemo, useEffect } from "react"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, Search, RefreshCw, Download, Filter, X } from "lucide-react"
-import type { ProductRecord, SortColumn, SortDirection } from "@/types/product"
-import { ProductTable } from "@/components/product-table"
-import { ProductCardList } from "@/components/product-card-list"
-import { SummaryTab } from "@/components/SummaryTab"
-import { fetchLatestProducts, fetchMaxLastModifiedRecord, refreshData } from "@/app/actions"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
-import { Pagination } from "@/components/ui/pagination"
-import { Card, CardContent } from "@/components/ui/card"
-import { motion, AnimatePresence } from "framer-motion"
-import { Badge } from "@/components/ui/badge"
-import { CompactProductTable } from "@/components/compact-product-table"
+import type React from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Loader2, Search, RefreshCw, Download, Filter, X } from "lucide-react";
+import type { ProductRecord, SortColumn, SortDirection } from "@/types/product";
+import { ProductTable } from "@/components/product-table";
+import { ProductCardList } from "@/components/product-card-list";
+import { SummaryTab } from "@/components/SummaryTab";
+import { fetchLatestProducts, fetchMaxLastModifiedRecord, refreshData } from "@/app/actions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Pagination } from "@/components/ui/pagination";
+import { Card, CardContent } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { CompactProductTable } from "@/components/compact-product-table";
 
 interface ProductPriceRecordProps {
-  initialProducts: ProductRecord[]
-  initialCategories: string[]
-  initialGroupNames: string[]
+  initialProducts: ProductRecord[];
+  initialCategories: string[];
+  initialGroupNames: string[];
 }
 
 export const ProductPriceRecord = ({
@@ -32,181 +31,181 @@ export const ProductPriceRecord = ({
   initialCategories,
   initialGroupNames,
 }: ProductPriceRecordProps) => {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   // URL検索パラメータから状態を取得
-  const sortColumn = (searchParams.get("sortColumn") as SortColumn) || "last_modified_date"
-  const sortDirection = (searchParams.get("sortDirection") as SortDirection) || "desc"
-  const searchCategory = searchParams.get("category") || ""
-  const searchProductName = searchParams.get("productName") || ""
-  const searchGroupName = searchParams.get("groupName") || ""
-  const currentPage = Number.parseInt(searchParams.get("page") || "1")
-  const itemsPerPage = Number.parseInt(searchParams.get("itemsPerPage") || "10")
+  const sortColumn = (searchParams.get("sortColumn") as SortColumn) || "last_modified_date";
+  const sortDirection = (searchParams.get("sortDirection") as SortDirection) || "desc";
+  const searchCategory = searchParams.get("category") || "";
+  const searchProductName = searchParams.get("productName") || "";
+  const searchGroupName = searchParams.get("groupName") || "";
+  const currentPage = Number.parseInt(searchParams.get("page") || "1");
+  const itemsPerPage = Number.parseInt(searchParams.get("itemsPerPage") || "10");
 
   // ローカル状態
-  const [records, setRecords] = useState<ProductRecord[]>(initialProducts)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [localSearchCategory, setLocalSearchCategory] = useState(searchCategory)
-  const [localSearchProductName, setLocalSearchProductName] = useState(searchProductName)
-  const [localSearchGroupName, setLocalSearchGroupName] = useState(searchGroupName)
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [records, setRecords] = useState<ProductRecord[]>(initialProducts);
+  const [loading, setLoading] = useState(false);
+  const [localSearchCategory, setLocalSearchCategory] = useState(searchCategory);
+  const [localSearchProductName, setLocalSearchProductName] = useState(searchProductName);
+  const [localSearchGroupName, setLocalSearchGroupName] = useState(searchGroupName);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // URL検索パラメータを更新する関数
-  const updateSearchParams = (params: Record<string, string>) => {
-    const newParams = new URLSearchParams(searchParams.toString())
+  const updateSearchParams = (params: Record<string, string>, replace = false) => {
+    const newParams = new URLSearchParams(searchParams.toString());
 
     Object.entries(params).forEach(([key, value]) => {
       if (value) {
-        newParams.set(key, value)
+        newParams.set(key, value);
       } else {
-        newParams.delete(key)
+        newParams.delete(key);
       }
-    })
+    });
 
-    router.push(`${pathname}?${newParams.toString()}`)
-  }
+    const url = `${pathname}?${newParams.toString()}`;
+    if (replace) {
+      router.replace(url);
+    } else {
+      router.push(url);
+    }
+  };
 
   const handleSort = (column: SortColumn) => {
-    const newDirection = column === sortColumn && sortDirection === "asc" ? "desc" : "asc"
+    const newDirection = column === sortColumn && sortDirection === "asc" ? "desc" : "asc";
 
-    updateSearchParams({
-      sortColumn: column,
-      sortDirection: newDirection,
-      page: "1", // ソート変更時は1ページ目に戻る
-    })
-  }
+    updateSearchParams(
+      {
+        sortColumn: column,
+        sortDirection: newDirection,
+        page: "1",
+      },
+      true,
+    );
+  };
 
   const fetchData = async (category: string, productName: string, groupName: string, lastModified = false) => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
 
     try {
       const data = lastModified
         ? await fetchMaxLastModifiedRecord()
-        : await fetchLatestProducts(category, productName, groupName)
+        : await fetchLatestProducts(category, productName, groupName);
 
-      setRecords(data)
+      setRecords(data);
 
-      // 検索結果が空の場合はメッセージを表示
       if (data.length === 0 && !lastModified) {
         toast({
           title: "検索結果",
           description: "条件に一致する商品が見つかりませんでした。",
           variant: "default",
-        })
+        });
       } else if (!lastModified) {
         toast({
           title: "検索完了",
           description: `${data.length}件の商品が見つかりました。`,
-        })
+        });
       }
 
-      // 検索成功時にページを1に戻す
       if (!lastModified) {
-        updateSearchParams({ page: "1" })
+        updateSearchParams({ page: "1" });
       }
     } catch (error) {
-      console.error(error)
-      setError(
-        "データの取得中にエラーが発生しました。ネットワーク接続を確認し、再度お試しください。エラーが続く場合は、管理者にお問い合わせください。",
-      )
+      console.error(error);
       toast({
         title: "エラー",
-        description: "データの取得中にエラーが発生しました。",
+        description: "データの取得中にエラーが発生しました。ネットワーク接続を確認し、再度お試しください。",
         variant: "destructive",
-      })
-      setRecords([])
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    // 検索パラメータを更新
     updateSearchParams({
       category: localSearchCategory,
       productName: localSearchProductName,
       groupName: localSearchGroupName,
-      page: "1", // 検索時は1ページ目に戻る
-    })
+      page: "1",
+    });
 
-    fetchData(localSearchCategory, localSearchProductName, localSearchGroupName)
-    setIsFilterOpen(false)
-  }
+    fetchData(localSearchCategory, localSearchProductName, localSearchGroupName);
+    setIsFilterOpen(false);
+  };
 
   const handleRefresh = async () => {
     try {
-      await refreshData()
+      await refreshData();
       toast({
         title: "更新完了",
         description: "データが最新の状態に更新されました。",
-      })
-      fetchData("", "", "", true)
+      });
+      void fetchData("", "", "", true);
     } catch {
       toast({
         title: "エラー",
         description: "データの更新に失敗しました。",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleClearFilters = () => {
-    setLocalSearchCategory("")
-    setLocalSearchProductName("")
-    setLocalSearchGroupName("")
+    setLocalSearchCategory("");
+    setLocalSearchProductName("");
+    setLocalSearchGroupName("");
 
     updateSearchParams({
       category: "",
       productName: "",
       groupName: "",
       page: "1",
-    })
+    });
 
-    fetchData("", "", "")
-    setIsFilterOpen(false)
-  }
+    void fetchData("", "", "");
+    setIsFilterOpen(false);
+  };
 
-  // URL検索パラメータが変更されたときにローカル検索状態を更新
   useEffect(() => {
-    setLocalSearchCategory(searchCategory)
-    setLocalSearchProductName(searchProductName)
-    setLocalSearchGroupName(searchGroupName)
-  }, [searchCategory, searchProductName, searchGroupName])
+    setLocalSearchCategory(searchCategory);
+    setLocalSearchProductName(searchProductName);
+    setLocalSearchGroupName(searchGroupName);
+  }, [searchCategory, searchProductName, searchGroupName]);
 
   const sortedRecords = useMemo(() => {
     const sortFn = (a: ProductRecord, b: ProductRecord) => {
-      const aValue = a[sortColumn]
-      const bValue = b[sortColumn]
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
 
       if (typeof aValue === "number" && typeof bValue === "number") {
-        const diff = aValue - bValue
-        return sortDirection === "asc" ? diff : -diff
+        const diff = aValue - bValue;
+        return sortDirection === "asc" ? diff : -diff;
       } else if (typeof aValue === "string" && typeof bValue === "string") {
-        const collator = new Intl.Collator("ja-JP")
-        const diff = collator.compare(aValue, bValue)
-        return sortDirection === "asc" ? diff : -diff
+        const collator = new Intl.Collator("ja-JP");
+        const diff = collator.compare(aValue, bValue);
+        return sortDirection === "asc" ? diff : -diff;
       } else {
-        console.warn(`Cannot compare values of different types: ${typeof aValue} and ${typeof bValue}`)
-        return 0
+        return 0;
       }
-    }
+    };
 
-    return [...records].sort(sortFn)
-  }, [records, sortColumn, sortDirection])
+    return [...records].sort(sortFn);
+  }, [records, sortColumn, sortDirection]);
 
   const paginatedRecords = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage
-    return sortedRecords.slice(startIndex, startIndex + itemsPerPage)
-  }, [sortedRecords, currentPage, itemsPerPage])
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedRecords.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedRecords, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(sortedRecords.length / itemsPerPage)
+  const totalPages = Math.ceil(sortedRecords.length / itemsPerPage);
 
   const handleCSVDownload = () => {
     const headers = [
@@ -218,7 +217,16 @@ export const ProductPriceRecord = ({
       "平均価格",
       ...Array.from({ length: 10 }, (_, i) => `ship${i + 1}`),
       "グループ名",
-    ]
+    ];
+
+    const escapeCsv = (value: unknown): string => {
+      const str = String(value ?? "");
+      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
     const csvContent = [
       headers.join(","),
       ...sortedRecords.map((record) =>
@@ -231,36 +239,40 @@ export const ProductPriceRecord = ({
           record.average,
           ...Array.from({ length: 10 }, (_, i) => record[`ship${i + 1}` as keyof ProductRecord]),
           record.group_name,
-        ].join(","),
+        ]
+          .map(escapeCsv)
+          .join(","),
       ),
-    ].join("\n")
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob)
-      link.setAttribute("href", url)
-      link.setAttribute("download", "product_records.csv")
-      link.style.visibility = "hidden"
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "product_records.csv");
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-  }
+  };
 
   const handlePageChange = (page: number) => {
-    updateSearchParams({ page: page.toString() })
-  }
+    updateSearchParams({ page: page.toString() }, true);
+  };
 
   const handleItemsPerPageChange = (value: string) => {
-    updateSearchParams({
-      itemsPerPage: value,
-      page: "1", // 表示件数変更時は1ページ目に戻る
-    })
-  }
+    updateSearchParams(
+      {
+        itemsPerPage: value,
+        page: "1",
+      },
+      true,
+    );
+  };
 
-  // アクティブなフィルターの数を計算
-  const activeFiltersCount = [searchCategory, searchProductName, searchGroupName].filter(Boolean).length
+  const activeFiltersCount = [searchCategory, searchProductName, searchGroupName].filter(Boolean).length;
 
   return (
     <div className="w-full">
@@ -413,7 +425,6 @@ export const ProductPriceRecord = ({
           )}
         </AnimatePresence>
 
-        {/* アクティブなフィルターの表示 */}
         {activeFiltersCount > 0 && (
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm text-muted-foreground">アクティブなフィルター:</span>
@@ -425,9 +436,9 @@ export const ProductPriceRecord = ({
                   size="icon"
                   className="h-4 w-4 p-0 ml-1"
                   onClick={() => {
-                    setLocalSearchCategory("")
-                    updateSearchParams({ category: "", page: "1" })
-                    fetchData("", searchProductName, searchGroupName)
+                    setLocalSearchCategory("");
+                    updateSearchParams({ category: "", page: "1" });
+                    void fetchData("", searchProductName, searchGroupName === "all" ? "" : searchGroupName);
                   }}
                 >
                   <X className="h-3 w-3" />
@@ -442,9 +453,9 @@ export const ProductPriceRecord = ({
                   size="icon"
                   className="h-4 w-4 p-0 ml-1"
                   onClick={() => {
-                    setLocalSearchGroupName("")
-                    updateSearchParams({ groupName: "", page: "1" })
-                    fetchData(searchCategory, searchProductName, "")
+                    setLocalSearchGroupName("");
+                    updateSearchParams({ groupName: "", page: "1" });
+                    void fetchData(searchCategory === "all" ? "" : searchCategory, searchProductName, "");
                   }}
                 >
                   <X className="h-3 w-3" />
@@ -459,9 +470,13 @@ export const ProductPriceRecord = ({
                   size="icon"
                   className="h-4 w-4 p-0 ml-1"
                   onClick={() => {
-                    setLocalSearchProductName("")
-                    updateSearchParams({ productName: "", page: "1" })
-                    fetchData(searchCategory, "", searchGroupName)
+                    setLocalSearchProductName("");
+                    updateSearchParams({ productName: "", page: "1" });
+                    void fetchData(
+                      searchCategory === "all" ? "" : searchCategory,
+                      "",
+                      searchGroupName === "all" ? "" : searchGroupName,
+                    );
                   }}
                 >
                   <X className="h-3 w-3" />
@@ -471,13 +486,6 @@ export const ProductPriceRecord = ({
           </div>
         )}
       </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertTitle>エラー</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {loading ? (
         <div className="flex flex-col items-center justify-center space-y-2 py-12">
@@ -613,5 +621,5 @@ export const ProductPriceRecord = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};

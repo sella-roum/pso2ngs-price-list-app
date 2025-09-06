@@ -1,43 +1,47 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import type { ProductRecord, ShipKey } from "@/types/product"
-import { formatCurrency, getColorClass } from "@/utils/formatters"
-import { ShipPopover } from "@/components/ShipPopover"
-import { ProductDialog } from "@/components/ProductDialog"
-import { ArrowUp, ArrowDown, Plus, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useComparison } from "@/contexts/ComparisonContext"
-import { motion } from "framer-motion"
+import Image from "next/image";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { ProductRecord, ShipKey, SortColumn, SortDirection } from "@/types/product";
+import { formatCurrency, getColorClass, formatDate } from "@/utils/formatters";
+import { ShipPopover } from "@/components/ShipPopover";
+import { ProductDialog } from "@/components/ProductDialog";
+import { ArrowUp, ArrowDown, Plus, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useComparison } from "@/contexts/ComparisonContext";
+import { motion } from "framer-motion";
 
 interface ProductTableProps {
-  records: ProductRecord[]
-  sortColumn: keyof ProductRecord
-  sortDirection: "asc" | "desc"
-  onSort: (column: keyof ProductRecord) => void
+  records: ProductRecord[];
+  sortColumn: SortColumn;
+  sortDirection: SortDirection;
+  onSort: (column: SortColumn) => void;
 }
 
 export function ProductTable({ records, sortColumn, sortDirection, onSort }: ProductTableProps) {
-  const { comparisonItems, addToComparison, removeFromComparison } = useComparison()
+  const { comparisonItems, addToComparison, removeFromComparison } = useComparison();
 
   const isInComparison = (record: ProductRecord) =>
-    comparisonItems.some((item) => item.product_name === record.product_name)
+    comparisonItems.some((item) => item.product_name === record.product_name);
 
   const handleComparisonToggle = (record: ProductRecord) => {
     if (isInComparison(record)) {
-      removeFromComparison(record)
+      removeFromComparison(record);
     } else {
-      addToComparison(record)
+      addToComparison(record);
     }
-  }
+  };
 
   return (
     <div className="table-container">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead onClick={() => onSort("category")} className="cursor-pointer">
+            <TableHead
+              onClick={() => onSort("category")}
+              className="cursor-pointer"
+              aria-sort={sortColumn === "category" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+            >
               カテゴリ{" "}
               {sortColumn === "category" &&
                 (sortDirection === "asc" ? (
@@ -47,7 +51,13 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
                 ))}
             </TableHead>
             <TableHead>画像</TableHead>
-            <TableHead onClick={() => onSort("last_modified_date")} className="cursor-pointer">
+            <TableHead
+              onClick={() => onSort("last_modified_date")}
+              className="cursor-pointer"
+              aria-sort={
+                sortColumn === "last_modified_date" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"
+              }
+            >
               最終更新日{" "}
               {sortColumn === "last_modified_date" &&
                 (sortDirection === "asc" ? (
@@ -56,7 +66,13 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
                   <ArrowDown className="inline-block w-4 h-4" />
                 ))}
             </TableHead>
-            <TableHead onClick={() => onSort("product_name")} className="cursor-pointer">
+            <TableHead
+              onClick={() => onSort("product_name")}
+              className="cursor-pointer"
+              aria-sort={
+                sortColumn === "product_name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"
+              }
+            >
               商品名{" "}
               {sortColumn === "product_name" &&
                 (sortDirection === "asc" ? (
@@ -65,7 +81,11 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
                   <ArrowDown className="inline-block w-4 h-4" />
                 ))}
             </TableHead>
-            <TableHead onClick={() => onSort("max")} className="cursor-pointer">
+            <TableHead
+              onClick={() => onSort("max")}
+              className="cursor-pointer"
+              aria-sort={sortColumn === "max" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+            >
               最高価格{" "}
               {sortColumn === "max" &&
                 (sortDirection === "asc" ? (
@@ -74,7 +94,11 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
                   <ArrowDown className="inline-block w-4 h-4" />
                 ))}
             </TableHead>
-            <TableHead onClick={() => onSort("min")} className="cursor-pointer">
+            <TableHead
+              onClick={() => onSort("min")}
+              className="cursor-pointer"
+              aria-sort={sortColumn === "min" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+            >
               最低価格{" "}
               {sortColumn === "min" &&
                 (sortDirection === "asc" ? (
@@ -83,7 +107,11 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
                   <ArrowDown className="inline-block w-4 h-4" />
                 ))}
             </TableHead>
-            <TableHead onClick={() => onSort("average")} className="cursor-pointer">
+            <TableHead
+              onClick={() => onSort("average")}
+              className="cursor-pointer"
+              aria-sort={sortColumn === "average" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+            >
               平均価格{" "}
               {sortColumn === "average" &&
                 (sortDirection === "asc" ? (
@@ -95,7 +123,11 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
             {Array.from({ length: 10 }, (_, i) => (
               <TableHead key={i}>ship{i + 1}</TableHead>
             ))}
-            <TableHead onClick={() => onSort("group_name")} className="cursor-pointer">
+            <TableHead
+              onClick={() => onSort("group_name")}
+              className="cursor-pointer"
+              aria-sort={sortColumn === "group_name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+            >
               グループ名{" "}
               {sortColumn === "group_name" &&
                 (sortDirection === "asc" ? (
@@ -110,7 +142,7 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
         <TableBody>
           {records.map((record, index) => (
             <motion.tr
-              key={index}
+              key={record.id ?? `${record.product_name}-${record.last_modified_date}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -120,17 +152,11 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
               <TableCell>
                 {record.img && (
                   <div className="w-16 h-16 relative overflow-hidden rounded">
-                    <Image
-                      src={record.img || "/placeholder.svg"}
-                      alt={record.product_name}
-                      width={64}
-                      height={64}
-                      className="object-cover"
-                    />
+                    <Image src={record.img} alt={record.product_name} width={64} height={64} className="object-cover" />
                   </div>
                 )}
               </TableCell>
-              <TableCell>{record.last_modified_date}</TableCell>
+              <TableCell>{formatDate(record.last_modified_date)}</TableCell>
               <TableCell>
                 <ProductDialog record={record} />
               </TableCell>
@@ -138,14 +164,14 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
               <TableCell className="bg-blue-100 dark:bg-blue-900/30 font-bold">{formatCurrency(record.min)}</TableCell>
               <TableCell>{formatCurrency(record.average)}</TableCell>
               {Array.from({ length: 10 }, (_, i) => {
-                const shipKey = `ship${i + 1}` as ShipKey
-                const shipValue = record[shipKey] as number
-                const colorClass = getColorClass(shipValue, record.max, record.min)
+                const shipKey = `ship${i + 1}` as ShipKey;
+                const shipValue = record[shipKey];
+                const colorClass = getColorClass(shipValue, record.max, record.min);
                 return (
                   <TableCell key={i} className={colorClass}>
                     <ShipPopover record={record} shipKey={shipKey} />
                   </TableCell>
-                )
+                );
               })}
               <TableCell>{record.group_name}</TableCell>
               <TableCell>
@@ -163,5 +189,5 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

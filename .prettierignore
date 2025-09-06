@@ -1,0 +1,31 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# vercel
+.vercel
+
+# coverage / dist / cache
+coverage
+dist
+.cache
+.turbo
+
+# toolings
+.eslintcache
+.stylelintcache
+.pnpm-store
+.yarn
+.idea
+.vscode
+
+# next/type declarations
+next-env.d.ts

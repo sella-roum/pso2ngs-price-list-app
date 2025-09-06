@@ -1,103 +1,138 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useComparison } from "@/contexts/ComparisonContext"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { formatCurrency, formatDate } from "@/utils/formatters"
-import Image from "next/image"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, RefreshCw } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { Badge } from "@/components/ui/badge"
-import { fetchProductHistory } from "@/app/actions"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
+import { useState, useEffect, useCallback } from "react";
+import { useComparison } from "@/contexts/ComparisonContext";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatCurrency, formatDate } from "@/utils/formatters";
+import Image from "next/image";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { fetchProductHistory } from "@/app/actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import type { ProductRecord, ShipsData, ShipKey } from "@/types/product";
+
+// グラフ用のデータ型を定義
+type MergedHistoryData = {
+  date: string;
+  [productName: string]: string | number | undefined;
+};
 
 const ComparisonPage = () => {
-  const { comparisonItems, clearComparison } = useComparison()
-  const [selectedShips, setSelectedShips] = useState(["ship1", "ship1"])
-  const [historyData, setHistoryData] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
+  const { comparisonItems, clearComparison } = useComparison();
+  const [selectedShips, setSelectedShips] = useState<string[]>([]);
+  const [historyData, setHistoryData] = useState<MergedHistoryData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (comparisonItems.length === 2) {
+      const initialShips = comparisonItems.map((item) => {
+        if (item.ships && typeof item.ships === "object") {
+          const shipKeys = Object.keys(item.ships);
+          return shipKeys.length > 0 ? shipKeys[0] : "ship1";
+        }
+        return "ship1";
+      });
+      setSelectedShips(initialShips);
+    }
+  }, [comparisonItems]);
+
+  const mergeHistoryData = useCallback(
+    (history1: ProductRecord[], history2: ProductRecord[]): MergedHistoryData[] => {
+      const dateMap = new Map<string, MergedHistoryData>();
+
+      if (!comparisonItems || comparisonItems.length < 2) {
+        return [];
+      }
+
+      // 最初の商品の履歴を追加
+      history1.forEach((item) => {
+        const date = formatDate(item.last_modified_date)?.split(" ")[0] ?? "";
+        dateMap.set(date, {
+          date,
+          [comparisonItems[0].product_name]: item.average,
+        });
+      });
+
+      // 2番目の商品の履歴を追加
+      history2.forEach((item) => {
+        const date = formatDate(item.last_modified_date)?.split(" ")[0] ?? "";
+        if (dateMap.has(date)) {
+          const existingData = dateMap.get(date);
+          if (existingData) {
+            existingData[comparisonItems[1].product_name] = item.average;
+          }
+        } else {
+          dateMap.set(date, {
+            date,
+            [comparisonItems[1].product_name]: item.average,
+          });
+        }
+      });
+
+      // 日付でソート
+      return Array.from(dateMap.values()).sort((a, b) => {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
+    },
+    [comparisonItems],
+  );
 
   useEffect(() => {
     if (comparisonItems.length !== 2) {
-      router.push("/")
-      return
+      router.push("/");
+      return;
     }
 
     const fetchHistoryData = async () => {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
       try {
         const [item1History, item2History] = await Promise.all([
           fetchProductHistory(comparisonItems[0].product_name),
           fetchProductHistory(comparisonItems[1].product_name),
-        ])
+        ]);
 
         // 履歴データを日付でマージ
-        const mergedData = mergeHistoryData(item1History, item2History)
-        setHistoryData(mergedData)
+        const mergedData = mergeHistoryData(item1History, item2History);
+        setHistoryData(mergedData);
       } catch (err) {
-        console.error("履歴データの取得中にエラーが発生しました:", err)
-        setError("履歴データの取得に失敗しました。")
+        console.error("履歴データの取得中にエラーが発生しました:", err);
+        setError("履歴データの取得に失敗しました。");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchHistoryData()
-  }, [comparisonItems, router])
-
-  const mergeHistoryData = (history1: any[], history2: any[]) => {
-    const dateMap = new Map()
-
-    // 最初の商品の履歴を追加
-    history1.forEach((item) => {
-      const date = formatDate(item.last_modified_date).split(" ")[0] // 日付部分のみ
-      dateMap.set(date, {
-        date,
-        [comparisonItems[0].product_name]: item.average,
-      })
-    })
-
-    // 2番目の商品の履歴を追加
-    history2.forEach((item) => {
-      const date = formatDate(item.last_modified_date).split(" ")[0] // 日付部分のみ
-      if (dateMap.has(date)) {
-        dateMap.get(date)[comparisonItems[1].product_name] = item.average
-      } else {
-        dateMap.set(date, {
-          date,
-          [comparisonItems[1].product_name]: item.average,
-        })
-      }
-    })
-
-    // 日付でソート
-    return Array.from(dateMap.values()).sort((a, b) => {
-      return new Date(a.date).getTime() - new Date(b.date).getTime()
-    })
-  }
+    fetchHistoryData();
+  }, [comparisonItems, router, mergeHistoryData]);
 
   const handleShipChange = (index: number, value: string) => {
     setSelectedShips((prev) => {
-      const newShips = [...prev]
-      newShips[index] = value
-      return newShips
-    })
-  }
+      const newShips = [...prev];
+      newShips[index] = value;
+      return newShips;
+    });
+  };
 
-  const getShipPrice = (item: (typeof comparisonItems)[0], shipKey: string) => {
-    return (item.ships as any)[shipKey]?.price_list[0] || 0
-  }
+  const getShipPrice = (item: ProductRecord, shipKey: string) => {
+    if (item.ships && typeof item.ships === "object" && !Array.isArray(item.ships)) {
+      const shipsData = item.ships as ShipsData;
+      const shipInfo = shipsData[shipKey as ShipKey];
+      return shipInfo?.price_list[0] ?? 0;
+    }
+    return (item[shipKey as keyof ProductRecord] as number) ?? 0;
+  };
 
-  if (comparisonItems.length !== 2) {
+  if (comparisonItems.length !== 2 || selectedShips.length !== 2) {
     return (
       <div className="container mx-auto p-4">
         <Alert>
@@ -109,14 +144,14 @@ const ComparisonPage = () => {
           商品一覧に戻る
         </Button>
       </div>
-    )
+    );
   }
 
-  const [item1, item2] = comparisonItems
+  const [item1, item2] = comparisonItems;
 
-  const priceDifference = getShipPrice(item1, selectedShips[0]) - getShipPrice(item2, selectedShips[1])
+  const priceDifference = getShipPrice(item1, selectedShips[0]) - getShipPrice(item2, selectedShips[1]);
   const priceDifferencePercentage =
-    getShipPrice(item2, selectedShips[1]) > 0 ? (priceDifference / getShipPrice(item2, selectedShips[1])) * 100 : 0
+    getShipPrice(item2, selectedShips[1]) > 0 ? (priceDifference / getShipPrice(item2, selectedShips[1])) * 100 : 0;
 
   return (
     <div className="container mx-auto p-4">
@@ -181,7 +216,7 @@ const ComparisonPage = () => {
                           {item.img ? (
                             <div className="w-32 h-32 relative overflow-hidden rounded-lg">
                               <Image
-                                src={item.img || "/placeholder.svg"}
+                                src={item.img}
                                 alt={item.product_name}
                                 width={128}
                                 height={128}
@@ -200,19 +235,18 @@ const ComparisonPage = () => {
 
                       <div className="mt-4">
                         <p className="text-sm text-muted-foreground mb-2">Ship選択:</p>
-                        <Select
-                          onValueChange={(value) => handleShipChange(index, value)}
-                          defaultValue={selectedShips[index]}
-                        >
+                        <Select onValueChange={(value) => handleShipChange(index, value)} value={selectedShips[index]}>
                           <SelectTrigger>
                             <SelectValue placeholder="Shipを選択" />
                           </SelectTrigger>
                           <SelectContent>
-                            {Object.keys(item.ships).map((shipKey) => (
-                              <SelectItem key={shipKey} value={shipKey}>
-                                {shipKey}
-                              </SelectItem>
-                            ))}
+                            {item.ships &&
+                              typeof item.ships === "object" &&
+                              Object.keys(item.ships).map((shipKey) => (
+                                <SelectItem key={shipKey} value={shipKey}>
+                                  {shipKey}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                         <p className="mt-2 font-bold">
@@ -384,7 +418,7 @@ const ComparisonPage = () => {
                       <LineChart data={historyData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
-                        <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                        <YAxis tickFormatter={(value) => formatCurrency(value as number)} />
                         <Tooltip formatter={(value) => formatCurrency(value as number)} />
                         <Legend />
                         <Line
@@ -405,7 +439,7 @@ const ComparisonPage = () => {
         </Tabs>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default ComparisonPage
+export default ComparisonPage;

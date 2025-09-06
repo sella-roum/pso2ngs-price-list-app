@@ -1,58 +1,73 @@
-"use client"
+"use client";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import type { ProductRecord, ShipKey } from "@/types/product"
-import { formatCurrency } from "@/utils/formatters"
-import { ProductDialog } from "@/components/ProductDialog"
-import { ArrowUp, ArrowDown, Plus, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useComparison } from "@/contexts/ComparisonContext"
-import { motion } from "framer-motion"
-import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { ProductRecord, ShipKey, SortColumn, SortDirection } from "@/types/product";
+import { formatCurrency } from "@/utils/formatters";
+import { ProductDialog } from "@/components/ProductDialog";
+import { ArrowUp, ArrowDown, Plus, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useComparison } from "@/contexts/ComparisonContext";
+import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CompactProductTableProps {
-  records: ProductRecord[]
-  sortColumn: keyof ProductRecord
-  sortDirection: "asc" | "desc"
-  onSort: (column: keyof ProductRecord) => void
+  records: ProductRecord[];
+  sortColumn: SortColumn;
+  sortDirection: SortDirection;
+  onSort: (column: SortColumn) => void;
 }
 
+type MinMaxShips = {
+  minShip: { key: ShipKey; value: number } | null;
+  maxShip: { key: ShipKey; value: number } | null;
+};
+
 export const CompactProductTable = ({ records, sortColumn, sortDirection, onSort }: CompactProductTableProps) => {
-  const { comparisonItems, addToComparison, removeFromComparison } = useComparison()
+  const { comparisonItems, addToComparison, removeFromComparison } = useComparison();
 
   const isInComparison = (record: ProductRecord) =>
-    comparisonItems.some((item) => item.product_name === record.product_name)
+    comparisonItems.some((item) => item.product_name === record.product_name);
 
   const handleComparisonToggle = (record: ProductRecord) => {
     if (isInComparison(record)) {
-      removeFromComparison(record)
+      removeFromComparison(record);
     } else {
-      addToComparison(record)
+      addToComparison(record);
     }
-  }
+  };
 
-  // 最も価格が高いShipと最も価格が低いShipを取得する関数
-  const getMinMaxShips = (record: ProductRecord) => {
-    let minShip: { key: ShipKey; value: number } | null = null
-    let maxShip: { key: ShipKey; value: number } | null = null
+  const getMinMaxShips = (record: ProductRecord): MinMaxShips => {
+    let minShip: { key: ShipKey; value: number } | null = null;
+    let maxShip: { key: ShipKey; value: number } | null = null;
 
-    Array.from({ length: 10 }, (_, i) => {
-      const shipKey = `ship${i + 1}` as ShipKey
-      const shipValue = record[shipKey] as number | null
+    const shipKeys: ShipKey[] = [
+      "ship1",
+      "ship2",
+      "ship3",
+      "ship4",
+      "ship5",
+      "ship6",
+      "ship7",
+      "ship8",
+      "ship9",
+      "ship10",
+    ];
 
-      if (shipValue) {
+    for (const shipKey of shipKeys) {
+      const shipValue = record[shipKey];
+      if (shipValue !== null && shipValue !== undefined) {
         if (!minShip || shipValue < minShip.value) {
-          minShip = { key: shipKey, value: shipValue }
+          minShip = { key: shipKey, value: shipValue };
         }
         if (!maxShip || shipValue > maxShip.value) {
-          maxShip = { key: shipKey, value: shipValue }
+          maxShip = { key: shipKey, value: shipValue };
         }
       }
-    })
+    }
 
-    return { minShip, maxShip }
-  }
+    return { minShip, maxShip };
+  };
 
   return (
     <div className="table-container">
@@ -111,18 +126,18 @@ export const CompactProductTable = ({ records, sortColumn, sortDirection, onSort
         </TableHeader>
         <TableBody>
           {records.map((record, index) => {
-            const { minShip, maxShip } = getMinMaxShips(record)
+            const { minShip, maxShip } = getMinMaxShips(record);
 
             return (
               <motion.tr
-                key={index}
+                key={record.id ?? `${record.product_name}-${record.last_modified_date}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 className="hover:bg-muted/20"
               >
                 <TableCell>
-                  <Badge variant="outline">{record.category}</Badge>
+                  <Badge variant="outline">{record.category ?? "-"}</Badge>
                 </TableCell>
                 <TableCell>
                   <ProductDialog record={record} />
@@ -168,7 +183,7 @@ export const CompactProductTable = ({ records, sortColumn, sortDirection, onSort
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">{record.group_name}</Badge>
+                  <Badge variant="outline">{record.group_name ?? "-"}</Badge>
                 </TableCell>
                 <TableCell>
                   <Button
@@ -181,10 +196,10 @@ export const CompactProductTable = ({ records, sortColumn, sortDirection, onSort
                   </Button>
                 </TableCell>
               </motion.tr>
-            )
+            );
           })}
         </TableBody>
       </Table>
     </div>
-  )
-}
+  );
+};

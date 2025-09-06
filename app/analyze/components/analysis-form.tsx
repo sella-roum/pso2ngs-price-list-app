@@ -1,88 +1,96 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import type { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
-import { analysisParamsSchema } from "@/lib/validations/product"
-import { fetchCategories } from "@/app/actions"
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import type { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { analysisParamsSchema } from "@/lib/validations/product";
+import { fetchCategories } from "@/app/actions";
 
-type FormValues = z.infer<typeof analysisParamsSchema>
+type FormValues = z.infer<typeof analysisParamsSchema>;
 
 export function AnalysisForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
-  const [categories, setCategories] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // フォームの初期値を検索パラメータから取得
   const defaultValues: Partial<FormValues> = {
     targetType: (searchParams.get("targetType") as "product" | "category") || "product",
     targetName: searchParams.get("targetName") || "",
     period: (searchParams.get("period") as "7d" | "30d" | "all") || "7d",
-  }
+  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(analysisParamsSchema),
     defaultValues,
-  })
+  });
 
   // カテゴリリストの取得
   const loadCategories = async () => {
     try {
-      const data = await fetchCategories()
-      setCategories(data)
-    } catch (error) {
+      const data = await fetchCategories();
+      setCategories(data);
+    } catch {
       toast({
         title: "エラー",
         description: "カテゴリの取得に失敗しました",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
+
+  // 初期値がcategoryなら初回にカテゴリ取得
+  useEffect(() => {
+    if (form.getValues("targetType") === "category" && categories.length === 0) {
+      void loadCategories();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, categories.length]);
 
   // targetTypeが変更されたときにカテゴリリストを取得
   const onTargetTypeChange = (value: "product" | "category") => {
     if (value === "category" && categories.length === 0) {
-      loadCategories()
+      void loadCategories();
     }
-  }
+  };
 
   // フォーム送信時の処理
   const onSubmit = (data: FormValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       // URLパラメータを更新
-      const params = new URLSearchParams()
-      params.set("targetType", data.targetType)
-      params.set("targetName", data.targetName)
-      params.set("period", data.period)
+      const params = new URLSearchParams();
+      params.set("targetType", data.targetType);
+      params.set("targetName", data.targetName);
+      params.set("period", data.period);
 
-      router.push(`/analyze?${params.toString()}`)
+      router.push(`/analyze?${params.toString()}`);
 
       toast({
         title: "分析開始",
         description: "データを分析しています...",
-      })
-    } catch (error) {
+      });
+    } catch {
       toast({
         title: "エラー",
         description: "分析の開始に失敗しました",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Form {...form}>
@@ -96,10 +104,10 @@ export function AnalysisForm() {
               <FormControl>
                 <RadioGroup
                   onValueChange={(value) => {
-                    field.onChange(value)
-                    onTargetTypeChange(value as "product" | "category")
+                    field.onChange(value);
+                    onTargetTypeChange(value as "product" | "category");
                   }}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex flex-col space-y-1"
                 >
                   <FormItem className="flex items-center space-x-3 space-y-0">
@@ -131,7 +139,7 @@ export function AnalysisForm() {
                 {form.watch("targetType") === "product" ? (
                   <Input placeholder="商品名を入力" {...field} />
                 ) : (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="カテゴリを選択" />
@@ -163,7 +171,7 @@ export function AnalysisForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>期間</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="期間を選択" />
@@ -186,5 +194,5 @@ export function AnalysisForm() {
         </Button>
       </form>
     </Form>
-  )
+  );
 }

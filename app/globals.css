@@ -55,7 +55,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
   }
 }
 
@@ -174,7 +176,9 @@ tr:hover td {
 .page-transition-enter-active {
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
+  transition:
+    opacity 300ms,
+    transform 300ms;
 }
 
 .page-transition-exit {
@@ -185,7 +189,24 @@ tr:hover td {
 .page-transition-exit-active {
   opacity: 0;
   transform: translateY(-10px);
-  transition: opacity 300ms, transform 300ms;
+  transition:
+    opacity 300ms,
+    transform 300ms;
+}
+
+/* アニメーション全般の軽減（ユーザー設定を尊重） */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out,
+  .animate-pulse-subtle,
+  .page-transition-enter-active,
+  .page-transition-exit-active,
+  * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* コンテナの最大幅を調整 */
