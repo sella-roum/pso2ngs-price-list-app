@@ -10,11 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { fetchProductAnalysisData } from "@/app/actions";
 import { formatCurrency, formatShortDate } from "@/utils/formatters";
-// AnalysisResult 型と ProductRecord 型をインポート
-import type { AnalysisResult } from "@/lib/validations/product";
-import type { ProductRecord } from "@/types/product"; // ProductRecord 型をインポート
+import type { AnalysisResult as AnalysisResultType } from "@/lib/validations/product";
+import type { ProductRecord } from "@/types/product";
 import Image from "next/image";
-// ProductDialog をインポート
 import { ProductDialog } from "@/components/ProductDialog";
 
 export function AnalysisResult() {
@@ -23,7 +21,7 @@ export function AnalysisResult() {
   const targetName = searchParams.get("targetName");
   const period = searchParams.get("period") as "7d" | "30d" | "all" | null;
 
-  const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null);
+  const [analysisData, setAnalysisData] = useState<AnalysisResultType | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
