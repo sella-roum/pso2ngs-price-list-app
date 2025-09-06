@@ -11,11 +11,7 @@ import { Loader2 } from "lucide-react";
 import { fetchProductAnalysisData } from "@/app/actions";
 import { formatCurrency, formatShortDate } from "@/utils/formatters";
 // AnalysisResult 型と ProductRecord 型をインポート
-import type {
-  AnalysisResult,
-  // DailyAnalysis,
-  // ProductSummary,
-} from "@/lib/validations/product";
+import type { AnalysisResult } from "@/lib/validations/product";
 import type { ProductRecord } from "@/types/product"; // ProductRecord 型をインポート
 import Image from "next/image";
 // ProductDialog をインポート
@@ -131,7 +127,7 @@ export function AnalysisResult() {
                   <XAxis dataKey="date" fontSize={12} tickMargin={5} />
                   <YAxis tickFormatter={(value) => formatCurrency(value)} width={80} fontSize={12} />
                   <Tooltip
-                    formatter={(value, name) => [formatCurrency(value as number), name]}
+                    formatter={(value) => formatCurrency(value as number)}
                     labelFormatter={(label) => `日付: ${label}`}
                   />
                   <Legend />
@@ -169,10 +165,10 @@ export function AnalysisResult() {
                   {analysisData.daily_trends.map((item) => (
                     <TableRow key={item.date}>
                       <TableCell>{formatShortDate(item.date)}</TableCell>
-                      <TableCell>{formatCurrency(item.max_price ?? 0)}</TableCell>
-                      <TableCell>{formatCurrency(item.min_price ?? 0)}</TableCell>
-                      <TableCell>{formatCurrency(item.avg_price ?? 0)}</TableCell>
-                      <TableCell>{formatCurrency(item.median_price ?? 0)}</TableCell>
+                      <TableCell>{formatCurrency(item.max_price)}</TableCell>
+                      <TableCell>{formatCurrency(item.min_price)}</TableCell>
+                      <TableCell>{formatCurrency(item.avg_price)}</TableCell>
+                      <TableCell>{formatCurrency(item.median_price)}</TableCell>
                       <TableCell
                         className={
                           item.max_price_change_pct && item.max_price_change_pct > 0
@@ -292,11 +288,11 @@ export function AnalysisResult() {
                             {/* ProductDialog を商品名部分に配置 */}
                             <ProductDialog record={dialogRecord} />
                           </TableCell>
-                          <TableCell>{formatCurrency(item.period_max ?? 0)}</TableCell>
-                          <TableCell>{formatCurrency(item.period_min ?? 0)}</TableCell>
-                          <TableCell>{formatCurrency(item.period_avg ?? 0)}</TableCell>
-                          <TableCell>{formatCurrency(item.start_price ?? 0)}</TableCell>
-                          <TableCell>{formatCurrency(item.end_price ?? 0)}</TableCell>
+                          <TableCell>{formatCurrency(item.period_max)}</TableCell>
+                          <TableCell>{formatCurrency(item.period_min)}</TableCell>
+                          <TableCell>{formatCurrency(item.period_avg)}</TableCell>
+                          <TableCell>{formatCurrency(item.start_price)}</TableCell>
+                          <TableCell>{formatCurrency(item.end_price)}</TableCell>
                           <TableCell
                             className={
                               item.price_change_pct && item.price_change_pct > 0

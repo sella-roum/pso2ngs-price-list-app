@@ -3,8 +3,8 @@
 import type React from "react";
 import { createContext, useState, useContext, type ReactNode, useEffect } from "react";
 import type { ProductRecord } from "@/types/product";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
+import { useRouter, usePathname } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 type ComparisonContextType = {
   comparisonItems: ProductRecord[];
@@ -17,10 +17,13 @@ type ComparisonContextType = {
 
 const ComparisonContext = createContext<ComparisonContextType | undefined>(undefined);
 
+const MAX_COMPARISON_ITEMS = 2;
+
 export const ComparisonProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [comparisonItems, setComparisonItems] = useState<ProductRecord[]>([]);
   const [isComparing, setIsComparing] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
 
   // ローカルストレージから比較アイテムを復元
@@ -28,7 +31,10 @@ export const ComparisonProvider: React.FC<{ children: ReactNode }> = ({ children
     try {
       const savedItems = localStorage.getItem("comparisonItems");
       if (savedItems) {
-        setComparisonItems(JSON.parse(savedItems));
+        const data = JSON.parse(savedItems);
+        if (Array.isArray(data) && data.every((i) => i && typeof i.product_name === "string")) {
+          setComparisonItems(data);
+        }
       }
     } catch (error) {
       console.error("Failed to load comparison items from localStorage:", error);
@@ -44,8 +50,16 @@ export const ComparisonProvider: React.FC<{ children: ReactNode }> = ({ children
     }
   }, [comparisonItems]);
 
+  // ルート変更後に比較状態をリセット
+  useEffect(() => {
+    setIsComparing(false);
+  }, [pathname]);
+
   const addToComparison = (item: ProductRecord) => {
-    if (comparisonItems.length < 2 && !comparisonItems.some((i) => i.product_name === item.product_name)) {
+    if (
+      comparisonItems.length < MAX_COMPARISON_ITEMS &&
+      !comparisonItems.some((i) => i.product_name === item.product_name)
+    ) {
       setComparisonItems([...comparisonItems, item]);
       toast({
         title: "比較リストに追加しました",
@@ -60,7 +74,7 @@ export const ComparisonProvider: React.FC<{ children: ReactNode }> = ({ children
     } else {
       toast({
         title: "比較リストがいっぱいです",
-        description: "比較リストには最大2つのアイテムしか追加できません。",
+        description: `比較リストには最大${MAX_COMPARISON_ITEMS}つのアイテムしか追加できません。`,
         variant: "destructive",
       });
     }
@@ -83,10 +97,10 @@ export const ComparisonProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const compareItems = () => {
-    if (comparisonItems.length !== 2) {
+    if (comparisonItems.length !== MAX_COMPARISON_ITEMS) {
       toast({
         title: "比較できません",
-        description: "比較するには2つのアイテムを選択してください。",
+        description: `比較するには${MAX_COMPARISON_ITEMS}つのアイテムを選択してください。`,
         variant: "destructive",
       });
       return;

@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <body className="antialiased">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ClientProvider>
             <div className="flex min-h-screen bg-gradient-to-br from-background to-background/95">
               <Sidebar />
@@ -39,5 +39,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-import "./globals.css";

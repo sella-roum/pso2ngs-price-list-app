@@ -31,12 +31,19 @@ export const ComparisonButton = () => {
           >
             <SplitSquareVertical className="mr-2 h-5 w-5" />
             比較する
-            <Badge variant="secondary" className="ml-2 bg-primary-foreground text-primary">
+            <Badge variant="secondary" className="ml-2 bg-primary-foreground text-primary" aria-live="polite">
               {comparisonItems.length}/2
             </Badge>
           </Button>
 
-          <Button variant="outline" size="icon" className="rounded-full shadow-lg" onClick={clearComparison}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full shadow-lg"
+            onClick={clearComparison}
+            aria-label="比較リストをクリア"
+            title="比較リストをクリア"
+          >
             <X className="h-5 w-5" />
           </Button>
         </div>

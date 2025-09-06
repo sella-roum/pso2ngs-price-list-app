@@ -47,13 +47,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ record }) => {
             </div>
             {record.img && (
               <div className="w-16 h-16 sm:w-20 sm:h-20 relative flex-shrink-0 rounded overflow-hidden">
-                <Image
-                  src={record.img || "/placeholder.svg"}
-                  alt={record.product_name}
-                  width={80}
-                  height={80}
-                  className="object-cover"
-                />
+                <Image src={record.img} alt={record.product_name} width={80} height={80} className="object-cover" />
               </div>
             )}
           </div>
@@ -79,8 +73,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ record }) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Array.from({ length: 10 }, (_, i) => {
                 const shipKey = `ship${i + 1}` as ShipKey;
-                const shipValue = record[shipKey] as number;
-                if (!shipValue) return null;
+                const shipValue = record[shipKey];
+                if (shipValue === null || shipValue === undefined) return null;
 
                 const colorClass = getColorClass(shipValue, record.max, record.min);
 
@@ -96,7 +90,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ record }) => {
 
           <div className="mt-4 flex items-center justify-between">
             <Badge variant="secondary" className="text-xs">
-              {record.group_name}
+              {record.group_name ?? "-"}
             </Badge>
 
             <Button

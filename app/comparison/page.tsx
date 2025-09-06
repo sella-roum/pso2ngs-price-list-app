@@ -16,7 +16,7 @@ import { fetchProductHistory } from "@/app/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import type { ProductRecord, ShipsData } from "@/types/product";
+import type { ProductRecord, ShipsData, ShipKey } from "@/types/product";
 
 // グラフ用のデータ型を定義
 type MergedHistoryData = {
@@ -26,11 +26,24 @@ type MergedHistoryData = {
 
 const ComparisonPage = () => {
   const { comparisonItems, clearComparison } = useComparison();
-  const [selectedShips, setSelectedShips] = useState(["ship1", "ship1"]);
+  const [selectedShips, setSelectedShips] = useState<string[]>([]);
   const [historyData, setHistoryData] = useState<MergedHistoryData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (comparisonItems.length === 2) {
+      const initialShips = comparisonItems.map((item) => {
+        if (item.ships && typeof item.ships === "object") {
+          const shipKeys = Object.keys(item.ships);
+          return shipKeys.length > 0 ? shipKeys[0] : "ship1";
+        }
+        return "ship1";
+      });
+      setSelectedShips(initialShips);
+    }
+  }, [comparisonItems]);
 
   const mergeHistoryData = useCallback(
     (history1: ProductRecord[], history2: ProductRecord[]): MergedHistoryData[] => {
@@ -42,7 +55,7 @@ const ComparisonPage = () => {
 
       // 最初の商品の履歴を追加
       history1.forEach((item) => {
-        const date = formatDate(item.last_modified_date).split(" ")[0]; // 日付部分のみ
+        const date = formatDate(item.last_modified_date)?.split(" ")[0] ?? "";
         dateMap.set(date, {
           date,
           [comparisonItems[0].product_name]: item.average,
@@ -51,7 +64,7 @@ const ComparisonPage = () => {
 
       // 2番目の商品の履歴を追加
       history2.forEach((item) => {
-        const date = formatDate(item.last_modified_date).split(" ")[0]; // 日付部分のみ
+        const date = formatDate(item.last_modified_date)?.split(" ")[0] ?? "";
         if (dateMap.has(date)) {
           const existingData = dateMap.get(date);
           if (existingData) {
@@ -111,13 +124,15 @@ const ComparisonPage = () => {
   };
 
   const getShipPrice = (item: ProductRecord, shipKey: string) => {
-    if (item.ships && typeof item.ships === "object") {
-      return (item.ships as ShipsData)[shipKey]?.price_list[0] || 0;
+    if (item.ships && typeof item.ships === "object" && !Array.isArray(item.ships)) {
+      const shipsData = item.ships as ShipsData;
+      const shipInfo = shipsData[shipKey as ShipKey];
+      return shipInfo?.price_list[0] ?? 0;
     }
-    return 0;
+    return (item[shipKey as keyof ProductRecord] as number) ?? 0;
   };
 
-  if (comparisonItems.length !== 2) {
+  if (comparisonItems.length !== 2 || selectedShips.length !== 2) {
     return (
       <div className="container mx-auto p-4">
         <Alert>
@@ -201,7 +216,7 @@ const ComparisonPage = () => {
                           {item.img ? (
                             <div className="w-32 h-32 relative overflow-hidden rounded-lg">
                               <Image
-                                src={item.img || "/placeholder.svg"}
+                                src={item.img}
                                 alt={item.product_name}
                                 width={128}
                                 height={128}
@@ -220,10 +235,7 @@ const ComparisonPage = () => {
 
                       <div className="mt-4">
                         <p className="text-sm text-muted-foreground mb-2">Ship選択:</p>
-                        <Select
-                          onValueChange={(value) => handleShipChange(index, value)}
-                          defaultValue={selectedShips[index]}
-                        >
+                        <Select onValueChange={(value) => handleShipChange(index, value)} value={selectedShips[index]}>
                           <SelectTrigger>
                             <SelectValue placeholder="Shipを選択" />
                           </SelectTrigger>

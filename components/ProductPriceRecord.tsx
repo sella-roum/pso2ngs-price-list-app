@@ -13,7 +13,7 @@ import { ProductCardList } from "@/components/product-card-list";
 import { SummaryTab } from "@/components/SummaryTab";
 import { fetchLatestProducts, fetchMaxLastModifiedRecord, refreshData } from "@/app/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/ui/pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,7 +54,7 @@ export const ProductPriceRecord = ({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // URL検索パラメータを更新する関数
-  const updateSearchParams = (params: Record<string, string>) => {
+  const updateSearchParams = (params: Record<string, string>, replace = false) => {
     const newParams = new URLSearchParams(searchParams.toString());
 
     Object.entries(params).forEach(([key, value]) => {
@@ -65,17 +65,25 @@ export const ProductPriceRecord = ({
       }
     });
 
-    router.push(`${pathname}?${newParams.toString()}`);
+    const url = `${pathname}?${newParams.toString()}`;
+    if (replace) {
+      router.replace(url);
+    } else {
+      router.push(url);
+    }
   };
 
   const handleSort = (column: SortColumn) => {
     const newDirection = column === sortColumn && sortDirection === "asc" ? "desc" : "asc";
 
-    updateSearchParams({
-      sortColumn: column,
-      sortDirection: newDirection,
-      page: "1", // ソート変更時は1ページ目に戻る
-    });
+    updateSearchParams(
+      {
+        sortColumn: column,
+        sortDirection: newDirection,
+        page: "1",
+      },
+      true,
+    );
   };
 
   const fetchData = async (category: string, productName: string, groupName: string, lastModified = false) => {
@@ -88,7 +96,6 @@ export const ProductPriceRecord = ({
 
       setRecords(data);
 
-      // 検索結果が空の場合はメッセージを表示
       if (data.length === 0 && !lastModified) {
         toast({
           title: "検索結果",
@@ -102,7 +109,6 @@ export const ProductPriceRecord = ({
         });
       }
 
-      // 検索成功時にページを1に戻す
       if (!lastModified) {
         updateSearchParams({ page: "1" });
       }
@@ -113,7 +119,6 @@ export const ProductPriceRecord = ({
         description: "データの取得中にエラーが発生しました。ネットワーク接続を確認し、再度お試しください。",
         variant: "destructive",
       });
-      // setRecords([])
     } finally {
       setLoading(false);
     }
@@ -122,12 +127,11 @@ export const ProductPriceRecord = ({
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 検索パラメータを更新
     updateSearchParams({
       category: localSearchCategory,
       productName: localSearchProductName,
       groupName: localSearchGroupName,
-      page: "1", // 検索時は1ページ目に戻る
+      page: "1",
     });
 
     fetchData(localSearchCategory, localSearchProductName, localSearchGroupName);
@@ -141,7 +145,7 @@ export const ProductPriceRecord = ({
         title: "更新完了",
         description: "データが最新の状態に更新されました。",
       });
-      fetchData("", "", "", true);
+      void fetchData("", "", "", true);
     } catch {
       toast({
         title: "エラー",
@@ -163,11 +167,10 @@ export const ProductPriceRecord = ({
       page: "1",
     });
 
-    fetchData("", "", "");
+    void fetchData("", "", "");
     setIsFilterOpen(false);
   };
 
-  // URL検索パラメータが変更されたときにローカル検索状態を更新
   useEffect(() => {
     setLocalSearchCategory(searchCategory);
     setLocalSearchProductName(searchProductName);
@@ -179,6 +182,9 @@ export const ProductPriceRecord = ({
       const aValue = a[sortColumn];
       const bValue = b[sortColumn];
 
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
       if (typeof aValue === "number" && typeof bValue === "number") {
         const diff = aValue - bValue;
         return sortDirection === "asc" ? diff : -diff;
@@ -187,7 +193,6 @@ export const ProductPriceRecord = ({
         const diff = collator.compare(aValue, bValue);
         return sortDirection === "asc" ? diff : -diff;
       } else {
-        console.warn(`Cannot compare values of different types: ${typeof aValue} and ${typeof bValue}`);
         return 0;
       }
     };
@@ -213,6 +218,15 @@ export const ProductPriceRecord = ({
       ...Array.from({ length: 10 }, (_, i) => `ship${i + 1}`),
       "グループ名",
     ];
+
+    const escapeCsv = (value: unknown): string => {
+      const str = String(value ?? "");
+      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
     const csvContent = [
       headers.join(","),
       ...sortedRecords.map((record) =>
@@ -225,11 +239,13 @@ export const ProductPriceRecord = ({
           record.average,
           ...Array.from({ length: 10 }, (_, i) => record[`ship${i + 1}` as keyof ProductRecord]),
           record.group_name,
-        ].join(","),
+        ]
+          .map(escapeCsv)
+          .join(","),
       ),
     ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
@@ -243,17 +259,19 @@ export const ProductPriceRecord = ({
   };
 
   const handlePageChange = (page: number) => {
-    updateSearchParams({ page: page.toString() });
+    updateSearchParams({ page: page.toString() }, true);
   };
 
   const handleItemsPerPageChange = (value: string) => {
-    updateSearchParams({
-      itemsPerPage: value,
-      page: "1", // 表示件数変更時は1ページ目に戻る
-    });
+    updateSearchParams(
+      {
+        itemsPerPage: value,
+        page: "1",
+      },
+      true,
+    );
   };
 
-  // アクティブなフィルターの数を計算
   const activeFiltersCount = [searchCategory, searchProductName, searchGroupName].filter(Boolean).length;
 
   return (
@@ -407,7 +425,6 @@ export const ProductPriceRecord = ({
           )}
         </AnimatePresence>
 
-        {/* アクティブなフィルターの表示 */}
         {activeFiltersCount > 0 && (
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm text-muted-foreground">アクティブなフィルター:</span>
@@ -421,7 +438,7 @@ export const ProductPriceRecord = ({
                   onClick={() => {
                     setLocalSearchCategory("");
                     updateSearchParams({ category: "", page: "1" });
-                    fetchData("", searchProductName, searchGroupName);
+                    void fetchData("", searchProductName, searchGroupName === "all" ? "" : searchGroupName);
                   }}
                 >
                   <X className="h-3 w-3" />
@@ -438,7 +455,7 @@ export const ProductPriceRecord = ({
                   onClick={() => {
                     setLocalSearchGroupName("");
                     updateSearchParams({ groupName: "", page: "1" });
-                    fetchData(searchCategory, searchProductName, "");
+                    void fetchData(searchCategory === "all" ? "" : searchCategory, searchProductName, "");
                   }}
                 >
                   <X className="h-3 w-3" />
@@ -455,7 +472,11 @@ export const ProductPriceRecord = ({
                   onClick={() => {
                     setLocalSearchProductName("");
                     updateSearchParams({ productName: "", page: "1" });
-                    fetchData(searchCategory, "", searchGroupName);
+                    void fetchData(
+                      searchCategory === "all" ? "" : searchCategory,
+                      "",
+                      searchGroupName === "all" ? "" : searchGroupName,
+                    );
                   }}
                 >
                   <X className="h-3 w-3" />

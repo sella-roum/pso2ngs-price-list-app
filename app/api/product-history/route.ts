@@ -4,13 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Supabase URL or Anon key is missing");
-}
-
-const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
-
 export async function GET(request: Request) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Supabase URL or Anon key is missing");
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
   const { searchParams } = new URL(request.url);
   const productName = searchParams.get("productName");
 

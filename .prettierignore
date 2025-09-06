@@ -12,3 +12,20 @@
 
 # vercel
 .vercel
+
+# coverage / dist / cache
+coverage
+dist
+.cache
+.turbo
+
+# toolings
+.eslintcache
+.stylelintcache
+.pnpm-store
+.yarn
+.idea
+.vscode
+
+# next/type declarations
+next-env.d.ts

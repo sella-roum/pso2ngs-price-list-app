@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-label";
+import type * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
 import {
   Controller,
@@ -101,6 +101,7 @@ const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.Compon
         id={formItemId}
         aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
         aria-invalid={!!error}
+        aria-errormessage={error ? formMessageId : undefined}
         {...props}
       />
     );
@@ -127,7 +128,14 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
     }
 
     return (
-      <p ref={ref} id={formMessageId} className={cn("text-sm font-medium text-destructive", className)} {...props}>
+      <p
+        ref={ref}
+        id={formMessageId}
+        role="alert"
+        aria-live="polite"
+        className={cn("text-sm font-medium text-destructive", className)}
+        {...props}
+      >
         {body}
       </p>
     );

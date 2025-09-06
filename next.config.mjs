@@ -5,9 +5,14 @@ try {
 } catch (e) {
   try {
     // fallback to CJS import
-    userConfig = await import("./v0-user-next.config");
+    userConfig = await import("./v0-user-next.config.cjs");
   } catch (innerError) {
-    // ignore error
+    try {
+      // fallback to JS import
+      userConfig = await import("./v0-user-next.config.js");
+    } catch {
+      // ignore error
+    }
   }
 }
 

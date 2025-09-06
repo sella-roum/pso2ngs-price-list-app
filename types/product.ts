@@ -7,7 +7,7 @@ export type ShipData = {
 };
 
 export type ShipsData = {
-  [shipName: string]: ShipData;
+  [key in ShipKey]?: ShipData;
 };
 
 // Supabaseの型を継承するのではなく、アプリケーションで実際に使用するプロパティを明示的に定義します。
@@ -43,7 +43,7 @@ export interface ProductRecord {
 
 export type ShipKey = `ship${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10}`;
 
-export type SortColumn = keyof ProductRecord;
+export type SortColumn = "category" | "last_modified_date" | "product_name" | "max" | "min" | "average" | "group_name";
 export type SortDirection = "asc" | "desc";
 
 export interface ProductFilterParams {

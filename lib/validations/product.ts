@@ -1,17 +1,19 @@
 import { z } from "zod";
 
 // 検索パラメータのバリデーションスキーマ
-export const searchParamsSchema = z.object({
-  category: z.string().optional(),
-  productName: z.string().optional(),
-  groupName: z.string().optional(),
-  sortColumn: z
-    .enum(["category", "last_modified_date", "product_name", "max", "min", "average", "group_name"])
-    .optional(),
-  sortDirection: z.enum(["asc", "desc"]).optional(),
-  page: z.coerce.number().int().positive().optional(),
-  itemsPerPage: z.coerce.number().int().positive().optional(),
-});
+export const searchParamsSchema = z
+  .object({
+    category: z.string().optional(),
+    productName: z.string().optional(),
+    groupName: z.string().optional(),
+    sortColumn: z
+      .enum(["category", "last_modified_date", "product_name", "max", "min", "average", "group_name"])
+      .optional(),
+    sortDirection: z.enum(["asc", "desc"]).optional(),
+    page: z.coerce.number().int().positive().optional(),
+    itemsPerPage: z.coerce.number().int().positive().optional(),
+  })
+  .strip();
 
 // 商品履歴取得のバリデーションスキーマ
 export const productHistoryParamsSchema = z.object({

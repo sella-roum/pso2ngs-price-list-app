@@ -56,20 +56,21 @@ export function Sidebar() {
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href}>
-                    <Button
-                      variant={pathname === item.href ? "default" : "ghost"}
-                      className={cn(
-                        "w-full justify-start nav-item",
-                        isOpen ? "" : "px-2",
-                        pathname === item.href ? "bg-primary text-primary-foreground" : "",
-                      )}
-                      title={item.label}
-                    >
+                  <Button
+                    asChild
+                    variant={pathname === item.href ? "default" : "ghost"}
+                    className={cn(
+                      "w-full justify-start nav-item",
+                      isOpen ? "" : "px-2",
+                      pathname === item.href ? "bg-primary text-primary-foreground" : "",
+                    )}
+                    title={item.label}
+                  >
+                    <Link href={item.href}>
                       <span className={cn("", isOpen ? "mr-2" : "")}>{item.icon}</span>
                       {isOpen && <span className="truncate">{item.label}</span>}
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -83,6 +84,7 @@ export function Sidebar() {
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="w-full justify-center mb-2"
                 title={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
+                aria-label={theme === "dark" ? "ライトモードに切り替え" : "ダークモードに切り替え"}
               >
                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
@@ -128,18 +130,19 @@ export function Sidebar() {
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} onClick={() => setIsOpen(false)}>
-                    <Button
-                      variant={pathname === item.href ? "default" : "ghost"}
-                      className={cn(
-                        "w-full justify-start nav-item",
-                        pathname === item.href ? "bg-primary text-primary-foreground" : "",
-                      )}
-                    >
+                  <Button
+                    asChild
+                    variant={pathname === item.href ? "default" : "ghost"}
+                    className={cn(
+                      "w-full justify-start nav-item",
+                      pathname === item.href ? "bg-primary text-primary-foreground" : "",
+                    )}
+                  >
+                    <Link href={item.href} onClick={() => setIsOpen(false)}>
                       <span className="mr-2">{item.icon}</span>
                       <span>{item.label}</span>
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </li>
               ))}
             </ul>

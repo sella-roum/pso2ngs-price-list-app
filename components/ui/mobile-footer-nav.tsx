@@ -22,28 +22,31 @@ export const MobileFooterNav = () => {
       animate={{ y: 0 }}
       transition={{ duration: 0.3, delay: 0.2 }}
     >
-      <nav className="flex justify-around items-center h-16">
-        {menuItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex flex-col items-center justify-center w-full h-full px-2 py-1 relative",
-              pathname === item.href ? "text-primary" : "text-muted-foreground hover:text-foreground",
-            )}
-            aria-current={pathname === item.href ? "page" : undefined}
-          >
-            {pathname === item.href && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute inset-0 bg-primary/10 rounded-md"
-                transition={{ duration: 0.2 }}
-              />
-            )}
-            {item.icon}
-            <span className="text-xs mt-1">{item.label}</span>
-          </Link>
-        ))}
+      <nav className="flex justify-around items-center h-16" aria-label="フッターナビゲーション">
+        {menuItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center w-full h-full px-2 py-1 relative",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-primary/10 rounded-md"
+                  transition={{ duration: 0.2 }}
+                />
+              )}
+              {item.icon}
+              <span className="text-xs mt-1">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </motion.div>
   );
