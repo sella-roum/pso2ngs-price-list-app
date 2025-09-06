@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import type { ProductRecord } from "@/types/product"
-import { ProductCard } from "@/components/ProductCard"
-import { motion } from "framer-motion"
+import type { ProductRecord } from "@/types/product";
+import { ProductCard } from "@/components/ProductCard";
+import { motion } from "framer-motion";
 
 interface ProductCardListProps {
-  records: ProductRecord[]
+  records: ProductRecord[];
 }
 
 export function ProductCardList({ records }: ProductCardListProps) {
@@ -22,5 +22,5 @@ export function ProductCardList({ records }: ProductCardListProps) {
         </motion.div>
       ))}
     </>
-  )
+  );
 }

@@ -16,14 +16,14 @@ export async function GET() {
 
     console.log({ data });
     if (error) throw error;
+    if (!data) {
+      return NextResponse.json([]);
+    }
 
-    const uniqueCategories = [...new Set(data.map((item) => item.category))];
+    const uniqueCategories = [...new Set(data.map((item: { category: string }) => item.category))];
     return NextResponse.json(uniqueCategories);
   } catch (error) {
     console.error("Error fetching categories:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch categories" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
   }
 }

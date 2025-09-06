@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { ProductRecord } from "@/types/product"
-import { formatCurrency } from "@/utils/formatters"
+import type React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ProductRecord, ShipKey } from "@/types/product"; // ShipKey をインポート
+import { formatCurrency } from "@/utils/formatters";
 import {
   BarChart as BarChartRecharts,
   Bar,
@@ -15,44 +15,45 @@ import {
   PieChart,
   Pie,
   Cell,
-} from "recharts"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { motion } from "framer-motion"
+} from "recharts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { motion } from "framer-motion";
 
 interface SummaryTabProps {
-  records: ProductRecord[]
+  records: ProductRecord[];
 }
 
 export const SummaryTab: React.FC<SummaryTabProps> = ({ records }) => {
-  const totalProducts = records.length
+  const totalProducts = records.length;
 
   // Ship統計
   const shipStats = Array.from({ length: 10 }, (_, i) => {
-    const shipKey = `ship${i + 1}`
-    const maxCount = records.filter((r) => r[shipKey] === r.max).length
-    const minCount = records.filter((r) => r[shipKey] === r.min).length
-    return { name: shipKey, max: maxCount, min: minCount }
-  })
+    const shipKey = `ship${i + 1}` as ShipKey; // ShipKey 型にキャスト
+    const maxCount = records.filter((r) => r[shipKey] === r.max).length;
+    const minCount = records.filter((r) => r[shipKey] === r.min).length;
+    return { name: shipKey, max: maxCount, min: minCount };
+  });
 
   // カテゴリ統計
   const categoryStats = records.reduce(
     (acc, record) => {
-      const category = record.category
+      // record.categoryがnullの可能性を考慮
+      const category = record.category ?? "";
       if (!acc[category]) {
-        acc[category] = { count: 0, totalPrice: 0 }
+        acc[category] = { count: 0, totalPrice: 0 };
       }
-      acc[category].count += 1
-      acc[category].totalPrice += record.average
-      return acc
+      acc[category].count += 1;
+      acc[category].totalPrice += record.average;
+      return acc;
     },
     {} as Record<string, { count: number; totalPrice: number }>,
-  )
+  );
 
   const categoryData = Object.entries(categoryStats).map(([name, { count, totalPrice }]) => ({
     name,
     count,
-    avgPrice: totalPrice / count,
-  }))
+    avgPrice: count > 0 ? totalPrice / count : 0,
+  }));
 
   // 価格帯統計
   const priceRanges = [
@@ -61,15 +62,15 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({ records }) => {
     { range: "10,001-100,000", min: 10001, max: 100000 },
     { range: "100,001-1,000,000", min: 100001, max: 1000000 },
     { range: "1,000,001+", min: 1000001, max: Number.POSITIVE_INFINITY },
-  ]
+  ];
 
   const priceRangeStats = priceRanges.map((range) => {
-    const count = records.filter((r) => r.average >= range.min && r.average <= range.max).length
-    return { name: range.range, value: count }
-  })
+    const count = records.filter((r) => r.average >= range.min && r.average <= range.max).length;
+    return { name: range.range, value: count };
+  });
 
   // 円グラフの色
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
   return (
     <div className="space-y-6">
@@ -87,7 +88,7 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({ records }) => {
               <div className="bg-primary/10 rounded-lg p-4 text-center">
                 <h3 className="text-lg font-medium mb-1">平均価格</h3>
                 <p className="text-3xl font-bold">
-                  {formatCurrency(records.reduce((sum, r) => sum + r.average, 0) / totalProducts || 0)}
+                  {formatCurrency(records.reduce((sum, r) => sum + r.average, 0) / (totalProducts || 1))}
                 </p>
               </div>
               <div className="bg-primary/10 rounded-lg p-4 text-center">
@@ -235,5 +236,5 @@ export const SummaryTab: React.FC<SummaryTabProps> = ({ records }) => {
         </Card>
       </motion.div>
     </div>
-  )
-}
+  );
+};

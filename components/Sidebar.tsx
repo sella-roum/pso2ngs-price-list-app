@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { FileText, ChevronLeft, ChevronRight, BarChart2, Home, Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
-import { motion } from "framer-motion"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { FileText, ChevronLeft, ChevronRight, BarChart2, Home, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { motion } from "framer-motion";
 
 export function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
-  const pathname = usePathname()
-  const { theme, setTheme } = useTheme()
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    setIsMounted(true)
-  }, [])
+    setIsMounted(true);
+  }, []);
 
-  const toggleSidebar = () => setIsOpen(!isOpen)
+  const toggleSidebar = () => setIsOpen(!isOpen);
 
   const menuItems = [
     { href: "/", label: "商品価格一覧", icon: <Home className="h-5 w-5" /> },
@@ -33,7 +33,7 @@ export function Sidebar() {
       label: "使用説明書",
       icon: <FileText className="h-5 w-5" />,
     },
-  ]
+  ];
 
   return (
     <>
@@ -169,5 +169,5 @@ export function Sidebar() {
         </div>
       </motion.div>
     </>
-  )
+  );
 }

@@ -1,36 +1,36 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import type { ProductRecord, ShipKey } from "@/types/product"
-import { formatCurrency, getColorClass } from "@/utils/formatters"
-import { ShipPopover } from "@/components/ShipPopover"
-import { ProductDialog } from "@/components/ProductDialog"
-import { ArrowUp, ArrowDown, Plus, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useComparison } from "@/contexts/ComparisonContext"
-import { motion } from "framer-motion"
+import Image from "next/image";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { ProductRecord, ShipKey } from "@/types/product";
+import { formatCurrency, getColorClass } from "@/utils/formatters";
+import { ShipPopover } from "@/components/ShipPopover";
+import { ProductDialog } from "@/components/ProductDialog";
+import { ArrowUp, ArrowDown, Plus, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useComparison } from "@/contexts/ComparisonContext";
+import { motion } from "framer-motion";
 
 interface ProductTableProps {
-  records: ProductRecord[]
-  sortColumn: keyof ProductRecord
-  sortDirection: "asc" | "desc"
-  onSort: (column: keyof ProductRecord) => void
+  records: ProductRecord[];
+  sortColumn: keyof ProductRecord;
+  sortDirection: "asc" | "desc";
+  onSort: (column: keyof ProductRecord) => void;
 }
 
 export function ProductTable({ records, sortColumn, sortDirection, onSort }: ProductTableProps) {
-  const { comparisonItems, addToComparison, removeFromComparison } = useComparison()
+  const { comparisonItems, addToComparison, removeFromComparison } = useComparison();
 
   const isInComparison = (record: ProductRecord) =>
-    comparisonItems.some((item) => item.product_name === record.product_name)
+    comparisonItems.some((item) => item.product_name === record.product_name);
 
   const handleComparisonToggle = (record: ProductRecord) => {
     if (isInComparison(record)) {
-      removeFromComparison(record)
+      removeFromComparison(record);
     } else {
-      addToComparison(record)
+      addToComparison(record);
     }
-  }
+  };
 
   return (
     <div className="table-container">
@@ -138,14 +138,14 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
               <TableCell className="bg-blue-100 dark:bg-blue-900/30 font-bold">{formatCurrency(record.min)}</TableCell>
               <TableCell>{formatCurrency(record.average)}</TableCell>
               {Array.from({ length: 10 }, (_, i) => {
-                const shipKey = `ship${i + 1}` as ShipKey
-                const shipValue = record[shipKey] as number
-                const colorClass = getColorClass(shipValue, record.max, record.min)
+                const shipKey = `ship${i + 1}` as ShipKey;
+                const shipValue = record[shipKey] as number;
+                const colorClass = getColorClass(shipValue, record.max, record.min);
                 return (
                   <TableCell key={i} className={colorClass}>
                     <ShipPopover record={record} shipKey={shipKey} />
                   </TableCell>
-                )
+                );
               })}
               <TableCell>{record.group_name}</TableCell>
               <TableCell>
@@ -163,5 +163,5 @@ export function ProductTable({ records, sortColumn, sortDirection, onSort }: Pro
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Home, BarChart2, FileText } from "lucide-react"
-import { motion } from "framer-motion"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Home, BarChart2, FileText } from "lucide-react";
+import { motion } from "framer-motion";
 
 export const MobileFooterNav = () => {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   const menuItems = [
     { href: "/", label: "商品一覧", icon: <Home className="h-5 w-5" /> },
     { href: "/analyze", label: "分析", icon: <BarChart2 className="h-5 w-5" /> },
     { href: "/document", label: "説明書", icon: <FileText className="h-5 w-5" /> },
-  ]
+  ];
 
   return (
     <motion.div
@@ -46,5 +46,5 @@ export const MobileFooterNav = () => {
         ))}
       </nav>
     </motion.div>
-  )
-}
+  );
+};

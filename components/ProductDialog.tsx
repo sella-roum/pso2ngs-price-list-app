@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react"; // useEffect をインポート
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { ProductRecord, ShipKey } from "@/types/product"; // ShipKey をインポート
 import { formatCurrency, getColorClass, formatDate } from "@/utils/formatters"; // formatDate をインポート
@@ -14,24 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ShipPopover } from "@/components/ShipPopover";
 import { fetchProductHistory } from "@/app/actions";
 import { useIsMobile } from "@/hooks/use-mobile"; // モバイル判定フックをインポート
@@ -42,9 +20,7 @@ interface ProductDialogProps {
 }
 
 export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
-  const [selectedShips, setSelectedShips] = useState<string[]>(
-    Array.from({ length: 10 }, (_, i) => `ship${i + 1}`)
-  );
+  const [selectedShips, setSelectedShips] = useState<string[]>(Array.from({ length: 10 }, (_, i) => `ship${i + 1}`));
   const [timeSeriesData, setTimeSeriesData] = useState<ProductRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +38,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
             const aNum = parseInt(a.replace("ship", ""));
             const bNum = parseInt(b.replace("ship", ""));
             return aNum - bNum;
-          })
+          }),
     );
   };
 
@@ -72,11 +48,9 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
       // 日付のフォーマットを短縮形に変更 (グラフX軸用)
       date: formatDate(historyRecord.last_modified_date).split(" ")[0], // YYYY/MM/DD 形式
     };
-    (Array.from({ length: 10 }, (_, i) => `ship${i + 1}`) as ShipKey[]).forEach(
-      (shipName) => {
-        dataPoint[shipName] = historyRecord[shipName] as number;
-      }
-    );
+    (Array.from({ length: 10 }, (_, i) => `ship${i + 1}`) as ShipKey[]).forEach((shipName) => {
+      dataPoint[shipName] = historyRecord[shipName] as number;
+    });
     return dataPoint;
   });
 
@@ -140,9 +114,7 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
           {loading ? (
             <div className="flex flex-col items-center justify-center h-full space-y-2">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">
-                データを読み込んでいます...
-              </p>
+              <p className="text-sm text-muted-foreground">データを読み込んでいます...</p>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-full">
@@ -154,12 +126,8 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
           ) : !hasLoadedData || timeSeriesData.length === 0 ? ( // hasLoadedDataもチェック
             <div className="flex items-center justify-center h-full text-center py-4">
               <div>
-                <p className="text-lg font-semibold text-muted-foreground">
-                  データがありません
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  この商品の価格履歴は現在登録されていません。
-                </p>
+                <p className="text-lg font-semibold text-muted-foreground">データがありません</p>
+                <p className="text-sm text-muted-foreground mt-1">この商品の価格履歴は現在登録されていません。</p>
               </div>
             </div>
           ) : (
@@ -170,23 +138,18 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
               </TabsList>
               {/* Ship選択チェックボックス */}
               <div className="flex flex-wrap gap-x-4 gap-y-2 my-4">
-                {Array.from({ length: 10 }, (_, i) => `ship${i + 1}`).map(
-                  (shipName) => (
-                    <div key={shipName} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`dialog-ship-${shipName}`} // IDが重複しないようにプレフィックス追加
-                        checked={selectedShips.includes(shipName)}
-                        onCheckedChange={() => handleShipToggle(shipName)}
-                      />
-                      <Label
-                        htmlFor={`dialog-ship-${shipName}`}
-                        className="text-sm font-normal"
-                      >
-                        {shipName}
-                      </Label>
-                    </div>
-                  )
-                )}
+                {Array.from({ length: 10 }, (_, i) => `ship${i + 1}`).map((shipName) => (
+                  <div key={shipName} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`dialog-ship-${shipName}`} // IDが重複しないようにプレフィックス追加
+                      checked={selectedShips.includes(shipName)}
+                      onCheckedChange={() => handleShipToggle(shipName)}
+                    />
+                    <Label htmlFor={`dialog-ship-${shipName}`} className="text-sm font-normal">
+                      {shipName}
+                    </Label>
+                  </div>
+                ))}
               </div>
               {/* グラフ表示 */}
               <TabsContent value="graph">
@@ -199,20 +162,13 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                       <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" fontSize={12} tickMargin={5} />
-                        <YAxis
-                          tickFormatter={(value) => formatCurrency(value)}
-                          width={80}
-                          fontSize={12}
-                        />
+                        <YAxis tickFormatter={(value) => formatCurrency(value)} width={80} fontSize={12} />
                         <Tooltip
                           formatter={(value) => formatCurrency(value as number)}
                           labelFormatter={(label) => `日付: ${label}`}
                         />
                         <Legend />
-                        {Array.from(
-                          { length: 10 },
-                          (_, i) => `ship${i + 1}`
-                        ).map((shipName, index) => (
+                        {Array.from({ length: 10 }, (_, i) => `ship${i + 1}`).map((shipName, index) => (
                           <Line
                             key={shipName}
                             type="monotone"
@@ -252,13 +208,8 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                             <TableHead>最低価格</TableHead>
                             <TableHead>平均価格</TableHead>
                             {/* 選択されたShipのみ表示 */}
-                            {Array.from(
-                              { length: 10 },
-                              (_, i) => `ship${i + 1}`
-                            )
-                              .filter((shipName) =>
-                                selectedShips.includes(shipName)
-                              )
+                            {Array.from({ length: 10 }, (_, i) => `ship${i + 1}`)
+                              .filter((shipName) => selectedShips.includes(shipName))
                               .map((shipName) => (
                                 <TableHead key={shipName}>{shipName}</TableHead>
                               ))}
@@ -267,45 +218,24 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({ record }) => {
                         <TableBody>
                           {timeSeriesData.map((historyRecord, index) => (
                             <TableRow key={index}>
-                              <TableCell>
-                                {formatDate(historyRecord.last_modified_date)}
-                              </TableCell>
+                              <TableCell>{formatDate(historyRecord.last_modified_date)}</TableCell>
                               <TableCell className="bg-red-100 dark:bg-red-900/30 font-bold">
                                 {formatCurrency(historyRecord.max)}
                               </TableCell>
                               <TableCell className="bg-blue-100 dark:bg-blue-900/30 font-bold">
                                 {formatCurrency(historyRecord.min)}
                               </TableCell>
-                              <TableCell>
-                                {formatCurrency(historyRecord.average)}
-                              </TableCell>
+                              <TableCell>{formatCurrency(historyRecord.average)}</TableCell>
                               {/* 選択されたShipのみ表示 */}
-                              {Array.from(
-                                { length: 10 },
-                                (_, i) => `ship${i + 1}` as ShipKey
-                              )
-                                .filter((shipName) =>
-                                  selectedShips.includes(shipName)
-                                )
+                              {Array.from({ length: 10 }, (_, i) => `ship${i + 1}` as ShipKey)
+                                .filter((shipName) => selectedShips.includes(shipName))
                                 .map((shipName) => {
-                                  const shipValue = historyRecord[
-                                    shipName
-                                  ] as number;
-                                  const colorClass = getColorClass(
-                                    shipValue,
-                                    historyRecord.max,
-                                    historyRecord.min
-                                  );
+                                  const shipValue = historyRecord[shipName] as number;
+                                  const colorClass = getColorClass(shipValue, historyRecord.max, historyRecord.min);
                                   return (
-                                    <TableCell
-                                      key={shipName}
-                                      className={colorClass}
-                                    >
+                                    <TableCell key={shipName} className={colorClass}>
                                       {/* ShipPopover を使用 */}
-                                      <ShipPopover
-                                        record={historyRecord}
-                                        shipKey={shipName}
-                                      />
+                                      <ShipPopover record={historyRecord} shipKey={shipName} />
                                     </TableCell>
                                   );
                                 })}

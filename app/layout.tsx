@@ -27,9 +27,7 @@ export default function RootLayout({
             <div className="flex min-h-screen bg-gradient-to-br from-background to-background/95">
               <Sidebar />
               <div className="flex-1 transition-all duration-300 ease-in-out md:ml-16 pb-16 md:pb-0">
-                <main className="container mx-auto p-4 animate-fade-in">
-                  {children}
-                </main>
+                <main className="container mx-auto p-4 animate-fade-in">{children}</main>
               </div>
               <MobileFooterNav />
               <ComparisonButton />

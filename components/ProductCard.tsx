@@ -1,35 +1,35 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { ProductRecord, ShipKey } from "@/types/product"
-import { formatCurrency, getColorClass } from "@/utils/formatters"
-import Image from "next/image"
-import { ProductDialog } from "@/components/ProductDialog"
-import { ShipPopover } from "@/components/ShipPopover"
-import { Badge } from "@/components/ui/badge"
-import { formatDate } from "@/utils/formatters"
-import { motion } from "framer-motion"
-import { useComparison } from "@/contexts/ComparisonContext"
-import { Button } from "@/components/ui/button"
-import { Plus, Check } from "lucide-react"
+import type React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ProductRecord, ShipKey } from "@/types/product";
+import { formatCurrency, getColorClass } from "@/utils/formatters";
+import Image from "next/image";
+import { ProductDialog } from "@/components/ProductDialog";
+import { ShipPopover } from "@/components/ShipPopover";
+import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/utils/formatters";
+import { motion } from "framer-motion";
+import { useComparison } from "@/contexts/ComparisonContext";
+import { Button } from "@/components/ui/button";
+import { Plus, Check } from "lucide-react";
 
 interface ProductCardProps {
-  record: ProductRecord
+  record: ProductRecord;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ record }) => {
-  const { comparisonItems, addToComparison, removeFromComparison } = useComparison()
+  const { comparisonItems, addToComparison, removeFromComparison } = useComparison();
 
-  const isInComparison = comparisonItems.some((item) => item.product_name === record.product_name)
+  const isInComparison = comparisonItems.some((item) => item.product_name === record.product_name);
 
   const handleComparisonToggle = () => {
     if (isInComparison) {
-      removeFromComparison(record)
+      removeFromComparison(record);
     } else {
-      addToComparison(record)
+      addToComparison(record);
     }
-  }
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -78,18 +78,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ record }) => {
             <h4 className="text-sm font-medium mb-2">Ship価格:</h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {Array.from({ length: 10 }, (_, i) => {
-                const shipKey = `ship${i + 1}` as ShipKey
-                const shipValue = record[shipKey] as number
-                if (!shipValue) return null
+                const shipKey = `ship${i + 1}` as ShipKey;
+                const shipValue = record[shipKey] as number;
+                if (!shipValue) return null;
 
-                const colorClass = getColorClass(shipValue, record.max, record.min)
+                const colorClass = getColorClass(shipValue, record.max, record.min);
 
                 return (
                   <div key={shipKey} className={`${colorClass} p-1 rounded flex items-center justify-between`}>
                     <span className="text-xs font-medium">{shipKey}:</span>
                     <ShipPopover record={record} shipKey={shipKey} />
                   </div>
-                )
+                );
               })}
             </div>
           </div>
@@ -121,5 +121,5 @@ export const ProductCard: React.FC<ProductCardProps> = ({ record }) => {
         </CardContent>
       </Card>
     </motion.div>
-  )
-}
+  );
+};

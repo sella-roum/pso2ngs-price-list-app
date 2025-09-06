@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { useComparison } from "@/contexts/ComparisonContext"
-import { Button } from "@/components/ui/button"
-import { SplitSquareVertical, X } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Badge } from "@/components/ui/badge"
+import { useComparison } from "@/contexts/ComparisonContext";
+import { Button } from "@/components/ui/button";
+import { SplitSquareVertical, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 
 export const ComparisonButton = () => {
-  const { comparisonItems, clearComparison, compareItems } = useComparison()
+  const { comparisonItems, clearComparison, compareItems } = useComparison();
 
   if (comparisonItems.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -42,5 +42,5 @@ export const ComparisonButton = () => {
         </div>
       </motion.div>
     </AnimatePresence>
-  )
-}
+  );
+};

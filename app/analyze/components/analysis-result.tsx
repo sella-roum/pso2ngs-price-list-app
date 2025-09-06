@@ -2,24 +2,8 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,10 +23,7 @@ import { ProductDialog } from "@/components/ProductDialog";
 
 export function AnalysisResult() {
   const searchParams = useSearchParams();
-  const targetType = searchParams.get("targetType") as
-    | "product"
-    | "category"
-    | null;
+  const targetType = searchParams.get("targetType") as "product" | "category" | null;
   const targetName = searchParams.get("targetName");
   const period = searchParams.get("period") as "7d" | "30d" | "all" | null;
 
@@ -62,19 +43,11 @@ export function AnalysisResult() {
       setError(null);
       setAnalysisData(null);
       try {
-        const data = await fetchProductAnalysisData(
-          targetType,
-          targetName,
-          period
-        );
+        const data = await fetchProductAnalysisData(targetType, targetName, period);
         setAnalysisData(data);
       } catch (error) {
         console.error("分析データの取得中にエラーが発生しました:", error);
-        setError(
-          error instanceof Error
-            ? error.message
-            : "分析データの取得に失敗しました"
-        );
+        setError(error instanceof Error ? error.message : "分析データの取得に失敗しました");
       } finally {
         setLoading(false);
       }
@@ -85,9 +58,7 @@ export function AnalysisResult() {
   if (!targetType || !targetName || !period) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">
-          分析条件を設定して「分析実行」ボタンをクリックしてください。
-        </p>
+        <p className="text-muted-foreground">分析条件を設定して「分析実行」ボタンをクリックしてください。</p>
       </div>
     );
   }
@@ -110,15 +81,10 @@ export function AnalysisResult() {
     );
   }
 
-  if (
-    !analysisData ||
-    (!analysisData.daily_trends.length && !analysisData.product_summary.length)
-  ) {
+  if (!analysisData || (!analysisData.daily_trends.length && !analysisData.product_summary.length)) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">
-          指定された条件の分析データが見つかりませんでした。
-        </p>
+        <p className="text-muted-foreground">指定された条件の分析データが見つかりませんでした。</p>
       </div>
     );
   }
@@ -151,9 +117,7 @@ export function AnalysisResult() {
       <TabsList>
         <TabsTrigger value="daily-chart">日毎トレンド (グラフ)</TabsTrigger>
         <TabsTrigger value="daily-table">日毎トレンド (表)</TabsTrigger>
-        {analysisData.product_summary.length > 0 && (
-          <TabsTrigger value="product-summary">商品別サマリー</TabsTrigger>
-        )}
+        {analysisData.product_summary.length > 0 && <TabsTrigger value="product-summary">商品別サマリー</TabsTrigger>}
       </TabsList>
 
       {/* --- 日毎トレンド (グラフ) --- */}
@@ -165,45 +129,16 @@ export function AnalysisResult() {
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" fontSize={12} tickMargin={5} />
-                  <YAxis
-                    tickFormatter={(value) => formatCurrency(value)}
-                    width={80}
-                    fontSize={12}
-                  />
+                  <YAxis tickFormatter={(value) => formatCurrency(value)} width={80} fontSize={12} />
                   <Tooltip
-                    formatter={(value, name) => [
-                      formatCurrency(value as number),
-                      name,
-                    ]}
+                    formatter={(value, name) => [formatCurrency(value as number), name]}
                     labelFormatter={(label) => `日付: ${label}`}
                   />
                   <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="最高価格"
-                    stroke="#ef4444"
-                    activeDot={{ r: 6 }}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="最低価格"
-                    stroke="#3b82f6"
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="平均価格"
-                    stroke="#10b981"
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="中央値"
-                    stroke="#8b5cf6"
-                    strokeDasharray="3 3"
-                    dot={false}
-                  />
+                  <Line type="monotone" dataKey="最高価格" stroke="#ef4444" activeDot={{ r: 6 }} dot={false} />
+                  <Line type="monotone" dataKey="最低価格" stroke="#3b82f6" dot={false} />
+                  <Line type="monotone" dataKey="平均価格" stroke="#10b981" dot={false} />
+                  <Line type="monotone" dataKey="中央値" stroke="#8b5cf6" strokeDasharray="3 3" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -234,66 +169,50 @@ export function AnalysisResult() {
                   {analysisData.daily_trends.map((item) => (
                     <TableRow key={item.date}>
                       <TableCell>{formatShortDate(item.date)}</TableCell>
-                      <TableCell>
-                        {formatCurrency(item.max_price ?? 0)}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(item.min_price ?? 0)}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(item.avg_price ?? 0)}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(item.median_price ?? 0)}
-                      </TableCell>
+                      <TableCell>{formatCurrency(item.max_price ?? 0)}</TableCell>
+                      <TableCell>{formatCurrency(item.min_price ?? 0)}</TableCell>
+                      <TableCell>{formatCurrency(item.avg_price ?? 0)}</TableCell>
+                      <TableCell>{formatCurrency(item.median_price ?? 0)}</TableCell>
                       <TableCell
                         className={
-                          item.max_price_change_pct &&
-                          item.max_price_change_pct > 0
+                          item.max_price_change_pct && item.max_price_change_pct > 0
                             ? "text-red-600"
-                            : item.max_price_change_pct &&
-                              item.max_price_change_pct < 0
-                            ? "text-green-600"
-                            : "text-muted-foreground"
+                            : item.max_price_change_pct && item.max_price_change_pct < 0
+                              ? "text-green-600"
+                              : "text-muted-foreground"
                         }
                       >
                         {formatChangePercent(item.max_price_change_pct)}
                       </TableCell>
                       <TableCell
                         className={
-                          item.min_price_change_pct &&
-                          item.min_price_change_pct > 0
+                          item.min_price_change_pct && item.min_price_change_pct > 0
                             ? "text-red-600"
-                            : item.min_price_change_pct &&
-                              item.min_price_change_pct < 0
-                            ? "text-green-600"
-                            : "text-muted-foreground"
+                            : item.min_price_change_pct && item.min_price_change_pct < 0
+                              ? "text-green-600"
+                              : "text-muted-foreground"
                         }
                       >
                         {formatChangePercent(item.min_price_change_pct)}
                       </TableCell>
                       <TableCell
                         className={
-                          item.avg_price_change_pct &&
-                          item.avg_price_change_pct > 0
+                          item.avg_price_change_pct && item.avg_price_change_pct > 0
                             ? "text-red-600"
-                            : item.avg_price_change_pct &&
-                              item.avg_price_change_pct < 0
-                            ? "text-green-600"
-                            : "text-muted-foreground"
+                            : item.avg_price_change_pct && item.avg_price_change_pct < 0
+                              ? "text-green-600"
+                              : "text-muted-foreground"
                         }
                       >
                         {formatChangePercent(item.avg_price_change_pct)}
                       </TableCell>
                       <TableCell
                         className={
-                          item.median_price_change_pct &&
-                          item.median_price_change_pct > 0
+                          item.median_price_change_pct && item.median_price_change_pct > 0
                             ? "text-red-600"
-                            : item.median_price_change_pct &&
-                              item.median_price_change_pct < 0
-                            ? "text-green-600"
-                            : "text-muted-foreground"
+                            : item.median_price_change_pct && item.median_price_change_pct < 0
+                              ? "text-green-600"
+                              : "text-muted-foreground"
                         }
                       >
                         {formatChangePercent(item.median_price_change_pct)}
@@ -333,10 +252,7 @@ export function AnalysisResult() {
                         id: 0, // ダミーID
                         product_name: item.product_name,
                         img: item.img,
-                        category:
-                          targetType === "category"
-                            ? targetName ?? "不明"
-                            : "不明", // カテゴリ分析時はtargetNameを使用
+                        category: targetType === "category" ? (targetName ?? "不明") : "不明", // カテゴリ分析時はtargetNameを使用
                         group_name: "不明", // DB関数で取得推奨
                         max: item.period_max ?? 0,
                         min: item.period_min ?? 0,
@@ -376,29 +292,18 @@ export function AnalysisResult() {
                             {/* ProductDialog を商品名部分に配置 */}
                             <ProductDialog record={dialogRecord} />
                           </TableCell>
-                          <TableCell>
-                            {formatCurrency(item.period_max ?? 0)}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(item.period_min ?? 0)}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(item.period_avg ?? 0)}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(item.start_price ?? 0)}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(item.end_price ?? 0)}
-                          </TableCell>
+                          <TableCell>{formatCurrency(item.period_max ?? 0)}</TableCell>
+                          <TableCell>{formatCurrency(item.period_min ?? 0)}</TableCell>
+                          <TableCell>{formatCurrency(item.period_avg ?? 0)}</TableCell>
+                          <TableCell>{formatCurrency(item.start_price ?? 0)}</TableCell>
+                          <TableCell>{formatCurrency(item.end_price ?? 0)}</TableCell>
                           <TableCell
                             className={
                               item.price_change_pct && item.price_change_pct > 0
                                 ? "text-red-600"
-                                : item.price_change_pct &&
-                                  item.price_change_pct < 0
-                                ? "text-green-600"
-                                : "text-muted-foreground"
+                                : item.price_change_pct && item.price_change_pct < 0
+                                  ? "text-green-600"
+                                  : "text-muted-foreground"
                             }
                           >
                             {formatPeriodChangePercent(item.price_change_pct)}
