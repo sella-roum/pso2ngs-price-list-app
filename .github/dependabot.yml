@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+
+    # 「影響が出にくい範囲」だけグルーピング（それ以外＝major等は別PRで残る）
+    groups:
+      prod-patch:
+        applies-to: version-updates
+        dependency-type: production
+        update-types: [patch]
+
+      dev-minor-patch:
+        applies-to: version-updates
+        dependency-type: development
+        update-types: [minor, patch]
+
+      prod-security-patch:
+        applies-to: security-updates
+        dependency-type: production
+        update-types: [patch]
+
+      dev-security-minor-patch:
+        applies-to: security-updates
+        dependency-type: development
+        update-types: [minor, patch]

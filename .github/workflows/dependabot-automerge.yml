@@ -1,0 +1,44 @@
+name: Dependabot auto-approve + auto-merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  automerge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.DEPENDABOT_MERGE_TOKEN }}
+          alert-lookup: true
+
+      # レビュー必須にしている場合のみ必要（必須でないならこのStepは削除OK）
+      - name: Approve PR
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_MERGE_TOKEN }}
+
+      - name: Enable auto-merge for safe updates
+        if: |
+          (
+            steps.meta.outputs.dependency-type == 'direct:production' &&
+            steps.meta.outputs.update-type == 'version-update:semver-patch'
+          ) || (
+            steps.meta.outputs.dependency-type == 'direct:development' &&
+            (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+             steps.meta.outputs.update-type == 'version-update:semver-minor')
+          )
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_MERGE_TOKEN }}
