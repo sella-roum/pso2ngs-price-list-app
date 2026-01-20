@@ -37,7 +37,7 @@
     "fs": "latest",
     "input-otp": "1.4.2",
     "lucide-react": "^0.562.0",
-    "next": "15.2.4",
+    "next": "16.1.4",
     "next-themes": "latest",
     "path": "latest",
     "react": "^19",
